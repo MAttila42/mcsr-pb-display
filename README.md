@@ -39,22 +39,26 @@ This project is a monorepo with two packages:
 - `extension`: The Svelte browser extension
 - `backend`: The Elysia backend server
 
+Some commands require you to be in the correct package directory. Check the `package.json` files for the scripts.
+
 #### Start development server
 
 ```sh
-nr ext # Debug extension (use in the extension package)
-nr dev # Start backend dev server (use in the backend package)
+nr ext # Debug extension (use in the `extension` package)
+nr dev # Start backend dev server (use in the `backend` package)
 ```
 
 #### Build
 
-You can use the build command in either of the package.
+You can use the build command in either of the packages.
 
 ```sh
 nr build
 ```
 
 #### Database
+
+For use in the `backend` package.
 
 ```sh
 nr db # drizzle-kit alias, use any subcommands available
@@ -71,7 +75,7 @@ For more information, check the [documentation](https://orm.drizzle.team/docs/ki
 #### Other
 
 ```sh
-nr add <component> # Add shadcn component
+nr add <component> # Add shadcn component (`extension` package only)
 nr lint # Eslint check and fix
 nr update # Update all dependencies to the latest version
 ```
