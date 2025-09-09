@@ -3,7 +3,7 @@
   import { Button } from '$lib/components/ui/button'
   import { treaty } from '@elysiajs/eden'
 
-  const client = treaty<App>('http://localhost:3000')
+  const client = treaty<App>(import.meta.env.VITE_API_URL!)
 
   let records = $state<string[]>([])
   listRecords()
@@ -25,9 +25,6 @@
 </script>
 
 <div class='flex flex-row gap-2'>
-  <Button onclick={listRecords}>
-    List records
-  </Button>
   <Button onclick={addRecord}>
     Add record
   </Button>

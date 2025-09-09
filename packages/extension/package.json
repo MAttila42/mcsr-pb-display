@@ -5,7 +5,7 @@
   "private": true,
   "packageManager": "bun@1.2.21",
   "scripts": {
-    "ext": "vite build --watch",
+    "ext": "vite build --mode development --watch",
     "build": "vite build",
     "add": "bun x shadcn-svelte@latest add",
     "check": "svelte-check --tsconfig ./tsconfig.json",
