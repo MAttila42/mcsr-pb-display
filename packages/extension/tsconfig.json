@@ -7,11 +7,14 @@
     "module": "ESNext",
     "paths": {
       "$lib": ["./src/lib"],
-      "$lib/*": ["./src/lib/*"]
+      "$lib/*": ["./src/lib/*"],
+      "@backend": ["../backend/src"],
+      "@backend/*": ["../backend/src/*"]
     },
     "resolveJsonModule": true,
     "allowJs": true,
     "checkJs": true,
+    "strict": true,
     "isolatedModules": true
   },
   "include": ["src/**/*.ts", "src/**/*.js", "src/**/*.svelte", "uno.config.ts"]

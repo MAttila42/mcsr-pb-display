@@ -1,6 +1,17 @@
 import type { Env } from 'bun'
 import type { Context } from 'elysia'
-import { app } from './app'
+import { cors } from '@elysiajs/cors'
+import { Elysia } from 'elysia'
+import { records } from './routes/records'
+
+const app = new Elysia({
+  strictPath: false,
+  aot: false,
+})
+  .use(cors())
+  .use(records)
+
+export type App = typeof app
 
 export default {
   async fetch(
