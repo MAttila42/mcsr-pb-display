@@ -1,0 +1,27 @@
+{
+  "name": "mcsr-pb-display-backend",
+  "version": "0.1.0",
+  "packageManager": "bun@1.2.21",
+  "module": "src/index.js",
+  "scripts": {
+    "dev": "bun run --watch src/index.ts",
+    "db": "drizzle-kit",
+    "deploy": "wrangler deploy --minify src/index.ts",
+    "setup:db": "bun run ./scripts/setup-db.ts"
+  },
+  "dependencies": {
+    "@libsql/client": "^0.15.15",
+    "drizzle-orm": "^0.44.5",
+    "drizzle-typebox": "^0.3.3",
+    "elysia": "latest"
+  },
+  "devDependencies": {
+    "bun-types": "latest",
+    "drizzle-kit": "^0.31.4",
+    "tsx": "^4.20.5",
+    "wrangler": "^4.34.0"
+  },
+  "overrides": {
+    "@sinclair/typebox": "0.32.4"
+  }
+}

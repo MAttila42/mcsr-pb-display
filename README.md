@@ -30,6 +30,8 @@ Example commands use [@antfu/ni](https://github.com/antfu-collective/ni).
 ```sh
 ni # Install dependencies
 nlx eemoji init -c none # Initialize automatic commit emojis
+
+nr setup:db # Setup the database (use in the `backend` package)
 ```
 
 ### Commands
