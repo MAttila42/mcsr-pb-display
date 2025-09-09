@@ -1,5 +1,5 @@
 {
-  "name": "mcsr-pb-display-backend",
+  "name": "mcsr-pb-display-api",
   "version": "0.1.0",
   "packageManager": "bun@1.2.21",
   "module": "src/index.js",
