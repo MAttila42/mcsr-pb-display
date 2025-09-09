@@ -20,3 +20,7 @@ export const records = new Elysia({ prefix: '/records' })
       text: t.String({ minLength: 1 }),
     }),
   })
+  .delete('/purge', async () => {
+    await db.delete(test)
+    return { success: true }
+  })
