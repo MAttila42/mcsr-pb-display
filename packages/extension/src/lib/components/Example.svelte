@@ -1,5 +1,5 @@
 <script lang='ts'>
-  import type { App } from '@backend'
+  import type { App } from '@api'
   import { Button } from '$lib/components/ui/button'
   import { treaty } from '@elysiajs/eden'
 

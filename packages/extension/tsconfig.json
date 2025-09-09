@@ -8,8 +8,8 @@
     "paths": {
       "$lib": ["./src/lib"],
       "$lib/*": ["./src/lib/*"],
-      "@backend": ["../backend/src"],
-      "@backend/*": ["../backend/src/*"]
+      "@api": ["../api/src"],
+      "@api/*": ["../api/src/*"]
     },
     "resolveJsonModule": true,
     "allowJs": true,
