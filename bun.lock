@@ -12,8 +12,8 @@
         "taze": "^19.6.0",
       },
     },
-    "packages/backend": {
-      "name": "mcsr-pb-display-backend",
+    "packages/api": {
+      "name": "mcsr-pb-display-api",
       "version": "0.1.0",
       "dependencies": {
         "@elysiajs/cors": "^1.3.3",
@@ -859,7 +859,7 @@
 
     "markdown-table": ["markdown-table@3.0.4", "", {}, "sha512-wiYz4+JrLyb/DqW2hkFJxP7Vd7JuTDm77fvbM8VfEQdmSMqcImWeeRbHwZjBjIFki/VaMK2BhFi7oUUZeM5bqw=="],
 
-    "mcsr-pb-display-backend": ["mcsr-pb-display-backend@workspace:packages/backend"],
+    "mcsr-pb-display-api": ["mcsr-pb-display-api@workspace:packages/api"],
 
     "mcsr-pb-display-ext": ["mcsr-pb-display-ext@workspace:packages/extension"],
 
