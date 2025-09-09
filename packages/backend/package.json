@@ -5,7 +5,9 @@
   "module": "src/index.js",
   "scripts": {
     "dev": "bun run --watch src/index.ts",
+    "preview": "wrangler dev --local src/index.ts",
     "db": "drizzle-kit",
+    "r:db": "NODE_ENV=production drizzle-kit",
     "deploy": "wrangler deploy --minify src/index.ts",
     "setup:db": "bun run ./scripts/setup-db.ts"
   },
