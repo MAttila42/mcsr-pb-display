@@ -5,7 +5,7 @@
   "description": "My Chrome Extension",
   "action": {
     "default_title": "MCSR PB Display",
-    "default_popup": "index.html"
+    "default_popup": "popup.html"
   },
   "permissions": [
     "storage",

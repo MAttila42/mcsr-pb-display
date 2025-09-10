@@ -1,13 +1,18 @@
 import type { Env } from 'bun'
 import type { Context } from 'elysia'
 import { cors } from '@elysiajs/cors'
+import { createHandler } from '@rttnd/gau/core'
 import { Elysia } from 'elysia'
+import { auth } from './auth'
 import { records } from './routes/records'
+
+const handler = createHandler(auth)
 
 const app = new Elysia({
   strictPath: false,
   aot: false,
 })
+  .mount(handler)
   .use(cors())
   .use(records)
 
