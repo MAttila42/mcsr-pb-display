@@ -1,3 +1,4 @@
+import process from 'node:process'
 import { DrizzleAdapter } from '@rttnd/gau/adapters/drizzle'
 import { createAuth } from '@rttnd/gau/core'
 import { Microsoft } from '@rttnd/gau/oauth'
@@ -9,12 +10,12 @@ export const auth = createAuth({
   basePath: '/auth',
   providers: [
     Microsoft({
-      clientId: import.meta.env.MICROSOFT_CLIENT_ID!,
-      clientSecret: import.meta.env.MICROSOFT_CLIENT_SECRET!,
+      clientId: process.env.MICROSOFT_CLIENT_ID!,
+      clientSecret: process.env.MICROSOFT_CLIENT_SECRET!,
     }),
   ],
   jwt: {
-    secret: import.meta.env.AUTH_SECRET!,
+    secret: process.env.AUTH_SECRET!,
   },
   cors: false,
   trustHosts: 'all',
