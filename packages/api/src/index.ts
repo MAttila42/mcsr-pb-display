@@ -1,6 +1,7 @@
 import type { Env } from 'bun'
 import type { Context } from 'elysia'
 import { cors } from '@elysiajs/cors'
+import { staticPlugin } from '@elysiajs/static'
 import { createHandler } from '@rttnd/gau/core'
 import { Elysia } from 'elysia'
 import { auth } from './auth'
@@ -14,8 +15,10 @@ const app = new Elysia({
 })
   .mount(handler)
   .use(cors())
+  .use(staticPlugin({ prefix: '/' }))
   .use(records)
   .get('/auth-success', 'Account link was successful! You can close this tab.')
+  .get('/', 'This is the backend API for the MCSR PB Display extension. No content here.')
 
 export type App = typeof app
 
