@@ -1,3 +1,7 @@
 name = "mcsr-pb-display"
 compatibility_date = "2025-09-09"
 compatibility_flags = [ "nodejs_compat" ]
+
+[assets]
+binding = "ASSETS"
+directory = "public"
