@@ -15,6 +15,7 @@ const app = new Elysia({
   .mount(handler)
   .use(cors())
   .use(records)
+  .get('/auth-success', 'Account link was successful! You can close this tab.')
 
 export type App = typeof app
 

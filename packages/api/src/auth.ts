@@ -1,19 +1,22 @@
-import { MemoryAdapter } from '@rttnd/gau/adapters/memory'
+import { DrizzleAdapter } from '@rttnd/gau/adapters/drizzle'
 import { createAuth } from '@rttnd/gau/core'
-import { GitHub } from '@rttnd/gau/oauth'
+import { Microsoft } from '@rttnd/gau/oauth'
+import { db } from './db'
+import { Accounts, Users } from './db/schema'
 
 export const auth = createAuth({
-  adapter: MemoryAdapter(),
+  adapter: DrizzleAdapter(db, Users, Accounts),
   basePath: '/auth',
   providers: [
-    GitHub({
-      clientId: import.meta.env.AUTH_GITHUB_ID!,
-      clientSecret: import.meta.env.AUTH_GITHUB_SECRET!,
+    Microsoft({
+      clientId: import.meta.env.MICROSOFT_CLIENT_ID!,
+      clientSecret: import.meta.env.MICROSOFT_CLIENT_SECRET!,
     }),
   ],
   jwt: {
     secret: import.meta.env.AUTH_SECRET!,
   },
+  cors: false,
   trustHosts: 'all',
 })
 
