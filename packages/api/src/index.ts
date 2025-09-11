@@ -2,7 +2,7 @@ import type { Env } from 'bun'
 import type { Context } from 'elysia'
 import { cors } from '@elysiajs/cors'
 import { createHandler } from '@rttnd/gau/core'
-import { Elysia, file } from 'elysia'
+import { Elysia } from 'elysia'
 import { auth } from './auth'
 import { records } from './routes/records'
 
@@ -15,10 +15,6 @@ const app = new Elysia({
   .mount(handler)
   .use(cors())
   .use(records)
-  .get(
-    '/.well-known/microsoft-identity-association.json',
-    file('./public/.well-known/microsoft-identity-association.json'),
-  )
   .get('/auth-success', 'Account link was successful! You can close this tab.')
   .get('/', 'This is the backend API for the MCSR PB Display extension. No content here.')
 
