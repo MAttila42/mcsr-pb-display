@@ -31,7 +31,7 @@ Example commands use [@antfu/ni](https://github.com/antfu-collective/ni).
 ni # Install dependencies
 nlx eemoji init -c none # Initialize automatic commit emojis
 
-nr setup:db # Setup the database (use in the `backend` package)
+nr setup:db # Setup the database (use in the `api` package)
 ```
 
 ### Commands
@@ -39,28 +39,22 @@ nr setup:db # Setup the database (use in the `backend` package)
 This project is a monorepo with two packages:
 
 - `extension`: The Svelte browser extension
-- `backend`: The Elysia backend server
+- `api`: The Elysia backend API
 
 Some commands require you to be in the correct package directory. Check the `package.json` files for the scripts.
 
-#### Start development server
+#### Development
+
+You can use these commands in either of the packages.
 
 ```sh
-nr ext # Debug extension (use in the `extension` package)
-nr dev # Start backend dev server (use in the `backend` package)
-```
-
-#### Build
-
-You can use the build command in either of the packages.
-
-```sh
+nr dev
 nr build
 ```
 
 #### Database
 
-For use in the `backend` package.
+For use in the `api` package.
 
 ```sh
 nr db # drizzle-kit alias, use any subcommands available
