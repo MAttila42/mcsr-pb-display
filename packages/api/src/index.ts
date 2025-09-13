@@ -15,7 +15,6 @@ const app = new Elysia({
   .mount(handler)
   .use(cors())
   .use(records)
-  .get('/auth-success', 'Account link was successful! You can close this tab.')
   .get('/', 'This is the backend API for the MCSR PB Display extension. No content here.')
 
 export type App = typeof app
@@ -25,7 +24,6 @@ export default {
     request: Request,
     _env: Env,
     _ctx: Context,
-
   ): Promise<Response> {
     return await app.fetch(request)
   },
