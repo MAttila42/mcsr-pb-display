@@ -3,7 +3,7 @@
   "type": "module",
   "version": "0.1.0",
   "private": true,
-  "packageManager": "bun@1.2.21",
+  "packageManager": "bun@1.2.22",
   "scripts": {
     "dev": "vite build --mode development --watch",
     "build": "vite build",
@@ -12,7 +12,7 @@
     "lint": "eslint ."
   },
   "dependencies": {
-    "@elysiajs/eden": "^1.4.0",
+    "@elysiajs/eden": "^1.4.1",
     "@fontsource/ubuntu": "^5.2.7",
     "@lucide/svelte": "^0.544.0",
     "@unocss/reset": "^66.5.1",

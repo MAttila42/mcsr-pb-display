@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "MCSR PB Display",
   "version": "0.1.0",
-  "description": "My Chrome Extension",
+  "description": "Browser extension to have your Minecraft Speedrun PB displayed next to your name on Twitch",
   "action": {
     "default_title": "MCSR PB Display",
     "default_popup": "popup.html"

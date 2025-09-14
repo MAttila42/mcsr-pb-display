@@ -2,7 +2,7 @@ import presetIcons from '@unocss/preset-icons'
 import {
   defineConfig,
   presetWind3,
-  transformerAttributifyJsx,
+  transformerDirectives,
   transformerVariantGroup,
 } from 'unocss'
 import { presetShadcn } from 'unocss-preset-shadcn'
@@ -21,7 +21,7 @@ export default defineConfig({
     }),
   ],
   transformers: [
-    transformerAttributifyJsx(),
+    transformerDirectives(),
     transformerVariantGroup(),
   ],
   preflights: [

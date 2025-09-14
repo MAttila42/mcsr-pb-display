@@ -5,7 +5,6 @@ import { Microsoft } from '@rttnd/gau/oauth'
 import {
   minecraftEntitlements,
   minecraftLogin,
-  minecraftProfile,
   xblAuthenticate,
   xstsAuthorize,
 } from './xbox'
@@ -17,10 +16,17 @@ export const auth = createAuth({
     Microsoft({
       clientId: process.env.MICROSOFT_CLIENT_ID!,
       clientSecret: process.env.MICROSOFT_CLIENT_SECRET!,
-      tenant: 'consumers',
-      scope: ['XboxLive.signin', 'openid', 'profile'],
     }),
   ],
+  profiles: {
+    microsoft: {
+      xbox: {
+        tenant: 'consumers',
+        scopes: ['XboxLive.signin', 'openid'],
+        prompt: 'select_account',
+      },
+    },
+  },
   jwt: {
     secret: process.env.AUTH_SECRET!,
   },
@@ -45,12 +51,12 @@ export const auth = createAuth({
       }
     }
 
-    const profile = await minecraftProfile(mc.access_token)
     return {
       handled: true,
       response: new Response(
-        `You have successfully linked your Minecraft account: ${profile.name}! You can close this tab now.`,
-        { status: 200 },
+        `<script>window.onload = window.close</script>
+        Authentication done! You can close this tab now.`,
+        { status: 200, headers: { 'Content-Type': 'text/html' } },
       ),
     }
   },

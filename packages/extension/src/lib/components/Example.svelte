@@ -24,11 +24,11 @@
   }
 </script>
 
-<div class='flex flex-row gap-2'>
-  <Button onclick={addRecord}>
+<div class='flex flex-row gap-3'>
+  <Button onclick={addRecord} class='grow'>
     Add record
   </Button>
-  <Button onclick={clearRecords}>
+  <Button onclick={clearRecords} class='grow'>
     Clear records
   </Button>
 </div>
