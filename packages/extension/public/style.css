@@ -1,12 +1,16 @@
+:root {
+  --ranked: #86ce34;
+}
+
 .name {
   outline: 2px solid #a78bfa;
   outline-offset: 2px;
 }
 
 .pb-badge {
-  border: 2px solid #6ba52a;
-  color: #6ba52a;
+  border: 1px solid var(--ranked);
+  color: var(--ranked);
   border-radius: 0.5rem;
-  padding: 0.1rem 0.4rem;
+  padding: 0 0.4rem;
   margin-right: 0.4rem;
 }

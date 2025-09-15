@@ -16,6 +16,8 @@ export default defineConfig({
       },
       output: {
         entryFileNames: '[name].js',
+        chunkFileNames: '[name].js',
+        inlineDynamicImports: false,
       },
     },
   },
@@ -24,6 +26,7 @@ export default defineConfig({
     UnoCSS({
       extractors: [extractorSvelte()],
     }),
+    // webExtension(),
   ],
   resolve: {
     alias: {
