@@ -2,6 +2,7 @@ import process from 'node:process'
 import { MemoryAdapter } from '@rttnd/gau/adapters/memory'
 import { createAuth } from '@rttnd/gau/core'
 import { Microsoft } from '@rttnd/gau/oauth'
+import { eq } from 'drizzle-orm'
 import { db } from './db'
 import { Users } from './db/schema'
 import { getSession } from './store/session'
@@ -81,10 +82,22 @@ export const auth = createAuth({
     const minecraft = await minecraftProfile(mc.access_token)
     const twitch = await twitchValidate(sessionData.token)
 
-    await db.insert(Users).values({
-      twitchLogin: twitch.login,
-      minecraftUUID: minecraft.id,
-    })
+    const [existing] = await db
+      .select()
+      .from(Users)
+      .where(eq(Users.twitchLogin, twitch.login))
+    if (existing) {
+      await db
+        .update(Users)
+        .set({ minecraftUUID: minecraft.id })
+        .where(eq(Users.twitchLogin, twitch.login))
+    }
+    else {
+      await db.insert(Users).values({
+        twitchLogin: twitch.login,
+        minecraftUUID: minecraft.id,
+      })
+    }
 
     return {
       handled: true,
