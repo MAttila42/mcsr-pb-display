@@ -2,12 +2,17 @@ import process from 'node:process'
 import { MemoryAdapter } from '@rttnd/gau/adapters/memory'
 import { createAuth } from '@rttnd/gau/core'
 import { Microsoft } from '@rttnd/gau/oauth'
+import { db } from './db'
+import { Users } from './db/schema'
+import { getSession } from './store/session'
+import { twitchValidate } from './util/twitch'
 import {
   minecraftEntitlements,
   minecraftLogin,
+  minecraftProfile,
   xblAuthenticate,
   xstsAuthorize,
-} from './xbox'
+} from './util/xbox'
 
 export const auth = createAuth({
   adapter: MemoryAdapter(),
@@ -51,11 +56,42 @@ export const auth = createAuth({
       }
     }
 
+    const sessionId = ctx.cookies.get('session_id')
+    if (!sessionId) {
+      return {
+        handled: true,
+        response: new Response(
+          'Missing session cookie.',
+          { status: 400 },
+        ),
+      }
+    }
+
+    const sessionData = getSession(sessionId)
+    if (!sessionData) {
+      return {
+        handled: true,
+        response: new Response(
+          'Session expired or invalid.',
+          { status: 400 },
+        ),
+      }
+    }
+
+    const minecraft = await minecraftProfile(mc.access_token)
+    const twitch = await twitchValidate(sessionData.token)
+
+    await db.insert(Users).values({
+      twitchLogin: twitch.login,
+      minecraftUUID: minecraft.id,
+    })
+
     return {
       handled: true,
       response: new Response(
-        `<script>window.onload = window.close</script>
-        Authentication done! You can close this tab now.`,
+        `Authentication done! You can close this tab now.</br>
+        Twitch: ${twitch.login}</br>
+        Minecraft: ${minecraft.name}`,
         { status: 200, headers: { 'Content-Type': 'text/html' } },
       ),
     }

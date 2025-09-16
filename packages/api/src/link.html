@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Account linking...</title>
+</head>
+
+<body>
+  Please wait...
+  <script>
+    (async () => {
+      const fragment = new URLSearchParams(window.location.hash.substring(1))
+      const twitchToken = fragment.get('twAccess')
+      if (!twitchToken)
+        throw new Error('Authentication token was not found.')
+
+      window.history.replaceState(null, '', window.location.pathname + window.location.search)
+
+      const response = await fetch('/session', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${twitchToken}`,
+        },
+      })
+      if (!response.ok)
+        throw new Error(`Server rejected the token.`)
+
+      window.location.href = '/auth/microsoft?profile=xbox'
+    })()
+  </script>
+</body>
+
+</html>

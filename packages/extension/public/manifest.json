@@ -32,9 +32,6 @@
     }
   ],
   "background": {
-    "scripts": [
-      "browser-polyfill.js",
-      "background.js"
-    ]
+    "scripts": ["background.js"]
   }
 }

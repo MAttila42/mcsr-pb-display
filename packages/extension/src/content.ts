@@ -20,7 +20,6 @@ document.querySelectorAll(CHAT_LINE).forEach((elem) => {
 })
 
 window.onload = async () => {
-  console.error('cookie: ', document.cookie)
   const authToken = document.cookie.split('; ').find(row => row.startsWith('auth-token='))?.split('=')[1]
   await browser.storage.local.set({ authToken })
 }

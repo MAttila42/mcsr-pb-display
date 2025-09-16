@@ -13,6 +13,7 @@ export default defineConfig({
       input: {
         popup: resolve(__dirname, './popup.html'),
         content: resolve(__dirname, './src/content.ts'),
+        background: resolve(__dirname, './src/background.ts'),
       },
       output: {
         entryFileNames: '[name].js',
@@ -26,7 +27,6 @@ export default defineConfig({
     UnoCSS({
       extractors: [extractorSvelte()],
     }),
-    // webExtension(),
   ],
   resolve: {
     alias: {

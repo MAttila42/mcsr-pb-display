@@ -1,13 +1,21 @@
 <script lang='ts'>
-  import Example from '$lib/components/Example.svelte'
   import { Button } from '$lib/components/ui/button'
   import browser from 'webextension-polyfill'
   import '@unocss/reset/tailwind.css'
   import '@fontsource/ubuntu'
   import logo from '/public/icon.png'
 
-  function open(url: string) {
-    browser.tabs.create({ url })
+  async function link() {
+    const result = await browser.storage.local.get('authToken')
+    if (!result.authToken) {
+      console.error('No auth token found!')
+      return
+    }
+    console.log(result.authToken)
+
+    browser.tabs.create({
+      url: `${import.meta.env.VITE_API_URL}/link#twAccess=${result.authToken}`,
+    })
     window.close()
   }
 </script>
@@ -17,9 +25,5 @@
     <img src={logo} alt='Logo' class='size-12'>
     <h1 class='text-2xl font-bold'>MCSR PB Display</h1>
   </div>
-  <Button
-    onclick={() => open(
-      `${import.meta.env.VITE_API_URL}/auth/microsoft?profile=xbox`,
-    )}>Link Minecraft Account</Button>
-  <Example />
+  <Button onclick={link}>Link Minecraft Account</Button>
 </main>
