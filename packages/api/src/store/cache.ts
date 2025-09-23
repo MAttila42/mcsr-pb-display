@@ -2,17 +2,11 @@
  * Internal representation of a cache entry.
  */
 interface CacheEntry<T> {
-  /**
-   * The cached value.
-   */
+  /** The cached value. */
   value: T
-  /**
-   * Timestamp after which the value is no longer fresh.
-   */
+  /** Timestamp after which the value is no longer fresh. */
   expiresAt: number
-  /**
-   * Timestamp after which the value is completely discarded.
-   */
+  /** Timestamp after which the value is completely discarded. */
   staleUntil: number
 }
 
@@ -20,13 +14,9 @@ interface CacheEntry<T> {
  * Public result returned from getCache.
  */
 export interface CacheResult<T> {
-  /**
-   * The cached value (undefined if not present or fully expired).
-   */
+  /** The cached value (undefined if not present or fully expired). */
   value: T
-  /**
-   * True if past primary TTL but before stale TTL (caller should refresh asynchronously).
-   */
+  /** True if past primary TTL but before stale TTL (caller should refresh asynchronously). */
   stale: boolean
 }
 
@@ -36,13 +26,9 @@ const cacheStore = new Map<string, CacheEntry<unknown>>()
  * Options for setCache.
  */
 export interface SetCacheOptions {
-  /**
-   * Primary TTL in ms (fresh window). Default: 15 minutes
-   */
+  /** Primary TTL in ms (fresh window). Default: 15 minutes */
   ttl?: number
-  /**
-   * Secondary TTL in ms (stale window end). Default: ttl * 12 (≈3 hours if ttl default).
-   */
+  /** Secondary TTL in ms (stale window end). Default: ttl * 12 (≈3 hours if ttl default). */
   staleTtl?: number
 }
 

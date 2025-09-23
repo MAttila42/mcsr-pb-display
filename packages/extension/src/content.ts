@@ -1,3 +1,5 @@
+import { getCache, setCache } from './lib/stores/cache'
+
 if (typeof browser === 'undefined') {
   // @ts-expect-error build time
   globalThis.browser = chrome
@@ -7,6 +9,8 @@ const CHAT_LINE = 'div.chat-line__message-container'
 const BADGES = 'span.chat-line__message--badges'
 const NAME = 'span.chat-author__display-name'
 const HANDLED_ATTR = 'data-pb-handled'
+
+const PB_TTL = 15 * 60 * 1000
 
 function processNode(node: Element) {
   if (!(node instanceof HTMLElement))
@@ -45,9 +49,12 @@ window.onload = async () => {
 }
 
 async function modifyNode(node: HTMLElement) {
-  const nameEl = node.querySelector(NAME) as HTMLElement
+  const nameEl = node.querySelector(NAME) as HTMLElement | null
+  const tw = nameEl?.textContent?.trim()
+  if (!tw)
+    return
 
-  const pb = await getPb(nameEl.textContent)
+  const pb = await getPb(tw)
   if (!pb)
     return
 
@@ -69,11 +76,34 @@ async function modifyNode(node: HTMLElement) {
 }
 
 async function getPb(tw: string): Promise<number | undefined> {
-  const res = await fetch(`http://localhost:3000/user/${tw}/pb`)
+  const key = `pb:${tw}`
+  const cached = getCache<number | undefined>(key)
+
+  if (cached && !cached.stale)
+    return cached.value
+
+  if (cached && cached.stale) {
+    ;(async () => {
+      const fresh = await fetchPb(tw)
+      setCache(key, fresh, PB_TTL)
+    })()
+    return cached.value
+  }
+
+  const fresh = await fetchPb(tw)
+  setCache(key, fresh, PB_TTL)
+  return fresh
+}
+
+async function fetchPb(tw: string): Promise<number | undefined> {
+  const url = `http://localhost:3000/user/${encodeURIComponent(tw)}/pb`
+  const res = await fetch(url)
   if (!res.ok) {
     if (res.status === 404)
       return undefined
-    throw new Error(`Failed to fetch PB`)
+    throw new Error('Failed to fetch PB')
   }
-  return Number(await res.text())
+  const text = await res.text()
+  const value = Number(text)
+  return Number.isFinite(value) ? value : undefined
 }

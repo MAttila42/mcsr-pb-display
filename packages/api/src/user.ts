@@ -12,26 +12,6 @@ export const user = new Elysia({
   aot: false,
   prefix: '/user',
 })
-// .get('/:tw', async ({ params }) => {
-//   const tw = params.tw.toLowerCase()
-//   const [user] = await db
-//     .select()
-//     .from(Users)
-//     .where(eq(Users.twitchLogin, tw))
-//   const mcProfile = await minecraftProfileLookup(user.minecraftUUID)
-
-  //   return {
-  //     twitchLogin: user.twitchLogin,
-  //     linkedAccounts: [
-  //       ...(user.minecraftUUID
-  //         ? [{
-  //             type: 'minecraft',
-  //             username: mcProfile.name,
-  //           }]
-  //         : []),
-  //     ],
-  //   }
-  // })
   .get('/:tw/pb', async ({ params, status }) => {
     const tw = params.tw.toLowerCase()
     const [user] = await db
