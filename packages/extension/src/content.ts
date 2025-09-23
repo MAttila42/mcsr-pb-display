@@ -41,7 +41,31 @@ const observer = new MutationObserver((mutations) => {
 })
 observer.observe(document.body, { childList: true, subtree: true })
 
-document.querySelectorAll(CHAT_LINE).forEach(processNode)
+// Initial bulk processing of already existing chat messages
+void (async () => {
+  const nodes = Array.from(document.querySelectorAll(CHAT_LINE)) as HTMLElement[]
+  if (nodes.length === 0)
+    return
+  const names = new Set<string>()
+  for (const node of nodes) {
+    const nameEl = node.querySelector(NAME) as HTMLElement | null
+    const tw = nameEl?.textContent?.trim()
+    if (tw)
+      names.add(tw.toLowerCase())
+  }
+  if (names.size > 0) {
+    try {
+      const map = await fetchBulkPbs(Array.from(names))
+      for (const [tw, value] of Object.entries(map))
+        setCache(`pb:${tw.toLowerCase()}`, value ?? undefined, PB_TTL)
+    }
+    catch (err) {
+      console.error('[mcsr-pb-display] bulk fetch failed', err)
+    }
+  }
+  // After populating cache, process nodes to attach badges
+  nodes.forEach(processNode)
+})()
 
 window.onload = async () => {
   const authToken = document.cookie.split('; ').find(row => row.startsWith('auth-token='))?.split('=')[1]
@@ -76,7 +100,8 @@ async function modifyNode(node: HTMLElement) {
 }
 
 async function getPb(tw: string): Promise<number | undefined> {
-  const key = `pb:${tw}`
+  const twKey = tw.toLowerCase()
+  const key = `pb:${twKey}`
   const cached = getCache<number | undefined>(key)
 
   if (cached && !cached.stale)
@@ -84,13 +109,13 @@ async function getPb(tw: string): Promise<number | undefined> {
 
   if (cached && cached.stale) {
     ;(async () => {
-      const fresh = await fetchPb(tw)
+      const fresh = await fetchPb(twKey)
       setCache(key, fresh, PB_TTL)
     })()
     return cached.value
   }
 
-  const fresh = await fetchPb(tw)
+  const fresh = await fetchPb(twKey)
   setCache(key, fresh, PB_TTL)
   return fresh
 }
@@ -106,4 +131,17 @@ async function fetchPb(tw: string): Promise<number | undefined> {
   const text = await res.text()
   const value = Number(text)
   return Number.isFinite(value) ? value : undefined
+}
+
+async function fetchBulkPbs(tws: string[]): Promise<Record<string, number | null>> {
+  const url = 'http://localhost:3000/user/pbs'
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ tw: tws.map(t => t.toLowerCase()) }),
+  })
+  if (!res.ok)
+    throw new Error('Failed to fetch bulk PBs')
+  const json = await res.json() as Record<string, number | null>
+  return json
 }
