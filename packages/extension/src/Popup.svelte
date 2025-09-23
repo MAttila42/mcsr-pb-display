@@ -11,7 +11,6 @@
       console.error('No auth token found!')
       return
     }
-    console.log(result.authToken)
 
     browser.tabs.create({
       url: `${import.meta.env.VITE_API_URL}/link#twAccess=${result.authToken}`,

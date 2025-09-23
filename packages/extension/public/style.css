@@ -2,11 +2,6 @@
   --ranked: #86ce34;
 }
 
-.name {
-  outline: 2px solid #a78bfa;
-  outline-offset: 2px;
-}
-
 .pb-badge {
   border: 1px solid var(--ranked);
   color: var(--ranked);
