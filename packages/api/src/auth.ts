@@ -6,11 +6,13 @@ import { eq } from 'drizzle-orm'
 import { db } from './db'
 import { Users } from './db/schema'
 import { getSession } from './store/session'
-import { twitchValidate } from './util/twitch'
 import {
   minecraftEntitlements,
   minecraftLogin,
   minecraftProfile,
+} from './util/minecraft'
+import { twitchValidate } from './util/twitch'
+import {
   xblAuthenticate,
   xstsAuthorize,
 } from './util/xbox'

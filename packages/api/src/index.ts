@@ -8,6 +8,7 @@ import { Elysia } from 'elysia'
 import { auth } from './auth'
 import link from './link.html' with { type: 'text' }
 import { setSession } from './store/session'
+import { user } from './user'
 
 const handler = createHandler(auth)
 
@@ -17,6 +18,7 @@ const app = new Elysia({
 })
   .mount(handler)
   .use(cors())
+  .use(user)
   .get('/link', () => new Response(link.toString(), {
     headers: { 'Content-Type': 'text/html' },
   }))
