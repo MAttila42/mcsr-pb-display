@@ -2,7 +2,6 @@ const LOGIN = 'https://api.minecraftservices.com/authentication/login_with_xbox'
 const ENTITLEMENTS = 'https://api.minecraftservices.com/entitlements/license'
 const PROFILE = 'https://api.minecraftservices.com/minecraft/profile'
 const PROFILE_LOOKUP = 'https://api.minecraftservices.com/minecraft/profile/lookup'
-const RANKED_USER = 'https://mcsrranked.com/api/users'
 
 export async function minecraftLogin(xstsToken: string, uhs?: string) {
   const body = { identityToken: `XBL3.0 x=${uhs};${xstsToken}` }
@@ -31,14 +30,4 @@ export async function minecraftProfileLookup(uuid: string) {
   if (!res.ok)
     throw new Error('MC profile lookup failed')
   return res.json()
-}
-
-export async function rankedUser(uuid: string) {
-  const res = await fetch(`${RANKED_USER}/${uuid}`)
-  if (!res.ok)
-    throw new Error('Ranked user fetch failed')
-  const json = await res.json()
-  if (json.status === 'error')
-    return null
-  return json.data
 }

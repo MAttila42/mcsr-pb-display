@@ -3,9 +3,10 @@ import { Elysia } from 'elysia'
 import { db } from './db'
 import { Users } from './db/schema'
 import {
-  // minecraftProfileLookup,
-  rankedUser,
-} from './util/minecraft'
+  getCache,
+  setCache,
+} from './store/cache'
+import { rankedUser } from './util/ranked'
 
 export const user = new Elysia({
   aot: false,
@@ -43,9 +44,27 @@ export const user = new Elysia({
     if (!user.minecraftUUID)
       return status(404, 'User has no linked account.')
 
+    const cacheKey = `pb:${user.twitchLogin}`
+    const cached = getCache<number>(cacheKey)
+
+    if (cached && !cached.stale)
+      return cached.value
+
+    if (cached && cached.stale) {
+      ;(async () => {
+        const ranked = await rankedUser(user.minecraftUUID)
+        if (!ranked)
+          return
+        const newPb = ranked.statistics.total.bestTime.ranked
+        setCache(cacheKey, newPb)
+      })()
+      return cached.value
+    }
+
     const ranked = await rankedUser(user.minecraftUUID)
     if (!ranked)
-      return status(404, 'User has no recorded personal best.')
-
-    return ranked.statistics.total.bestTime.ranked
+      return status(404, 'User has no ranked stats.')
+    const pb = ranked.statistics.total.bestTime.ranked
+    setCache(cacheKey, pb)
+    return pb
   })
