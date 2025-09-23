@@ -49,21 +49,20 @@ export const user = new Elysia({
     return pb
   })
   .post('/pbs', async ({ body, status }) => {
-    // body: { tw: string[] }
     try {
       const payload = (typeof body === 'string' ? JSON.parse(body) : body) as { tw: string[] }
       const twList = Array.isArray(payload?.tw) ? payload.tw.map(t => t.toLowerCase()).slice(0, 200) : []
       if (twList.length === 0)
         return status(400, 'Missing tw array')
 
-      // Fetch users from DB for provided twitch logins
-      const users = await db.select().from(Users).where(inArray(Users.twitchLogin, twList))
+      const users = await db
+        .select()
+        .from(Users)
+        .where(inArray(Users.twitchLogin, twList))
       const byTw = new Map(users.map(u => [u.twitchLogin.toLowerCase(), u]))
 
-      // Prepare results map with undefined by default
       const results: Record<string, number | null> = Object.create(null)
 
-      // Helper to set cache and results
       const set = (tw: string, value: number | null | undefined) => {
         const cacheKey = `pb:${tw}`
         if (value != null)
@@ -71,7 +70,6 @@ export const user = new Elysia({
         results[tw] = value ?? null
       }
 
-      // First, attempt to fulfill from cache where fresh
       const staleToRefresh: { tw: string, uuid: string }[] = []
       for (const tw of twList) {
         const cacheKey = `pb:${tw}`
@@ -93,11 +91,9 @@ export const user = new Elysia({
           continue
         }
 
-        // Not cached at all -> mark for fetch now
         staleToRefresh.push({ tw, uuid: user.minecraftUUID })
       }
 
-      // Fetch missing/stale sequentially with throttled rankedUser
       for (const item of staleToRefresh) {
         try {
           const ranked = await rankedUser(item.uuid)
@@ -109,7 +105,6 @@ export const user = new Elysia({
           set(item.tw, typeof pb === 'number' ? pb : null)
         }
         catch {
-          // Do not fail entire batch; leave existing value or null
           if (results[item.tw] == null)
             results[item.tw] = null
         }

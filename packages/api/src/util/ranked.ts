@@ -14,7 +14,8 @@ async function rawRankedUser(uuid: string) {
 }
 
 /**
- * Throttled wrapper to respect ~500 req / 10 min (~1 request / 1.2s).
+ * Throttled wrapper to respect \~500 req / 10 min (\~1 request / 1.2s).
+ *
  * We serialize calls and ensure at least INTERVAL_MS delay between successive requests.
  */
 const INTERVAL_MS = 1250
@@ -36,8 +37,6 @@ export function rankedUser(uuid: string) {
     }
   }
 
-  // Chain tasks to enforce serialization and spacing
-  // Capture this task's promise before updating the chain so callers get their own promise
   const next = chain.then(task, task)
   chain = next.catch(() => { /* keep chain alive */ })
   return next

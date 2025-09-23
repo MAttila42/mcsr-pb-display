@@ -41,7 +41,6 @@ const observer = new MutationObserver((mutations) => {
 })
 observer.observe(document.body, { childList: true, subtree: true })
 
-// Initial bulk processing of already existing chat messages
 void (async () => {
   const nodes = Array.from(document.querySelectorAll(CHAT_LINE)) as HTMLElement[]
   if (nodes.length === 0)
@@ -63,7 +62,6 @@ void (async () => {
       console.error('[mcsr-pb-display] bulk fetch failed', err)
     }
   }
-  // After populating cache, process nodes to attach badges
   nodes.forEach(processNode)
 })()
 
