@@ -5,6 +5,8 @@ if (typeof browser === 'undefined') {
   globalThis.browser = chrome
 }
 
+const API_URL = import.meta.env.VITE_API_URL
+
 const CHAT_LINE = 'div.chat-line__message-container'
 const BADGES = 'span.chat-line__message--badges'
 const NAME = 'span.chat-author__display-name'
@@ -119,8 +121,7 @@ async function getPb(tw: string): Promise<number | undefined> {
 }
 
 async function fetchPb(tw: string): Promise<number | undefined> {
-  const url = `http://localhost:3000/user/${encodeURIComponent(tw)}/pb`
-  const res = await fetch(url)
+  const res = await fetch(`${API_URL}/user/${encodeURIComponent(tw)}/pb`)
   if (!res.ok) {
     if (res.status === 404)
       return undefined
@@ -132,8 +133,7 @@ async function fetchPb(tw: string): Promise<number | undefined> {
 }
 
 async function fetchBulkPbs(tws: string[]): Promise<Record<string, number | null>> {
-  const url = 'http://localhost:3000/user/pbs'
-  const res = await fetch(url, {
+  const res = await fetch(`${API_URL}/user/pbs`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ tw: tws.map(t => t.toLowerCase()) }),
