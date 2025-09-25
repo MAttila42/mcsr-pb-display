@@ -1,11 +1,12 @@
-import { getCache, setCache } from './lib/stores/cache'
+import { setCache } from './lib/stores/cache'
+import { fetchBulkPbs, getPb } from './lib/utils'
 
 if (typeof browser === 'undefined') {
   // @ts-expect-error build time
   globalThis.browser = chrome
 }
 
-const API_URL = import.meta.env.VITE_API_URL
+// API_URL now used in pb utilities
 
 const CHAT_LINE = 'div.chat-line__message-container'
 const BADGES = 'span.chat-line__message--badges'
@@ -97,49 +98,4 @@ async function modifyNode(node: HTMLElement) {
     pbBadge.className = 'pb-badge'
     badgesNode.appendChild(pbBadge)
   }
-}
-
-async function getPb(tw: string): Promise<number | undefined> {
-  const twKey = tw.toLowerCase()
-  const key = `pb:${twKey}`
-  const cached = getCache<number | undefined>(key)
-
-  if (cached && !cached.stale)
-    return cached.value
-
-  if (cached && cached.stale) {
-    ;(async () => {
-      const fresh = await fetchPb(twKey)
-      setCache(key, fresh, PB_TTL)
-    })()
-    return cached.value
-  }
-
-  const fresh = await fetchPb(twKey)
-  setCache(key, fresh, PB_TTL)
-  return fresh
-}
-
-async function fetchPb(tw: string): Promise<number | undefined> {
-  const res = await fetch(`${API_URL}/user/${encodeURIComponent(tw)}/pb`)
-  if (!res.ok) {
-    if (res.status === 404)
-      return undefined
-    throw new Error('Failed to fetch PB')
-  }
-  const text = await res.text()
-  const value = Number(text)
-  return Number.isFinite(value) ? value : undefined
-}
-
-async function fetchBulkPbs(tws: string[]): Promise<Record<string, number | null>> {
-  const res = await fetch(`${API_URL}/user/pbs`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ tw: tws.map(t => t.toLowerCase()) }),
-  })
-  if (!res.ok)
-    throw new Error('Failed to fetch bulk PBs')
-  const json = await res.json() as Record<string, number | null>
-  return json
 }

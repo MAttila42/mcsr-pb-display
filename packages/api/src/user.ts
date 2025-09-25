@@ -6,7 +6,7 @@ import {
   getCache,
   setCache,
 } from './store/cache'
-import { rankedUser } from './util/ranked'
+import { rankedUser } from './util'
 
 export const user = new Elysia({
   aot: false,

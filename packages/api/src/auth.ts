@@ -10,12 +10,10 @@ import {
   minecraftEntitlements,
   minecraftLogin,
   minecraftProfile,
-} from './util/minecraft'
-import { twitchValidate } from './util/twitch'
-import {
+  twitchValidate,
   xblAuthenticate,
   xstsAuthorize,
-} from './util/xbox'
+} from './util'
 
 export const auth = createAuth({
   adapter: MemoryAdapter(),
