@@ -6,8 +6,6 @@ if (typeof browser === 'undefined') {
   globalThis.browser = chrome
 }
 
-// API_URL now used in pb utilities
-
 const CHAT_LINE = 'div.chat-line__message-container'
 const BADGES = 'span.chat-line__message--badges'
 const NAME = 'span.chat-author__display-name'

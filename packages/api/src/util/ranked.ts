@@ -1,3 +1,5 @@
+import { createThrottledQueue } from './throttle'
+
 const RANKED_USER = 'https://mcsrranked.com/api/users'
 
 /**
@@ -19,25 +21,8 @@ async function rawRankedUser(uuid: string) {
  * We serialize calls and ensure at least INTERVAL_MS delay between successive requests.
  */
 const INTERVAL_MS = 1250
-let lastRun = 0
-let chain: Promise<unknown> = Promise.resolve()
+const runRankedRequest = createThrottledQueue(INTERVAL_MS)
 
 export function rankedUser(uuid: string) {
-  const task = async () => {
-    const now = Date.now()
-    const wait = Math.max(INTERVAL_MS - (now - lastRun), 0)
-    if (wait > 0)
-      await new Promise(resolve => setTimeout(resolve, wait))
-    try {
-      const data = await rawRankedUser(uuid)
-      return data
-    }
-    finally {
-      lastRun = Date.now()
-    }
-  }
-
-  const next = chain.then(task, task)
-  chain = next.catch(() => { /* keep chain alive */ })
-  return next
+  return runRankedRequest(() => rawRankedUser(uuid))
 }
