@@ -30,8 +30,5 @@
       ],
       "css": ["style.css"]
     }
-  ],
-  "background": {
-    "scripts": ["background.js"]
-  }
+  ]
 }
