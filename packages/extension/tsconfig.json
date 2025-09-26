@@ -17,5 +17,10 @@
     "strict": true,
     "isolatedModules": true
   },
-  "include": ["src/**/*.ts", "src/**/*.js", "src/**/*.svelte", "uno.config.ts", "src/content.tst.tssrc/content.tsntent.ts", "src/content.ts", "src/content.ts"]
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.js",
+    "src/**/*.svelte",
+    "uno.config.ts"
+  ]
 }

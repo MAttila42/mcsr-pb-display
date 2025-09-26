@@ -1,5 +1,5 @@
-import { setCache } from './lib/stores/cache'
-import { fetchBulkPbs, formatTime, getPb } from './lib/utils'
+import { setCache } from './cache'
+import { fetchBulkPbs, formatTime, getPb } from './pb'
 
 if (typeof browser === 'undefined') {
   // @ts-expect-error build time
