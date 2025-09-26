@@ -50,12 +50,21 @@ export async function fetchBulkPbs(tws: string[]): Promise<Record<string, number
   const res = await fetch(`${API_URL}/user/pbs`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ tw: tws.map(t => t.toLowerCase()) }),
+    body: JSON.stringify(tws.map(t => t.toLowerCase())),
   })
   if (!res.ok)
     throw new Error('Failed to fetch bulk PBs')
   const json = await res.json() as Record<string, number | null>
   return json
+}
+
+export function formatTime(ms: number): string {
+  const date = new Date(ms)
+  const hours = date.getUTCHours()
+  const minutes = date.getUTCMinutes().toString().padStart(2, '0')
+  const seconds = date.getUTCSeconds().toString().padStart(2, '0')
+  const formatted = hours > 0 ? `${hours}:${minutes}:${seconds}` : `${minutes}:${seconds}`
+  return formatted
 }
 
 export const __pbInternals = { PB_TTL }

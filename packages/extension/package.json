@@ -9,11 +9,12 @@
     "build": "vite build",
     "add": "bun x shadcn-svelte@latest add",
     "check": "svelte-check --tsconfig ./tsconfig.json",
-    "lint": "eslint ."
+    "lint": "eslint . --fix"
   },
   "dependencies": {
     "@elysiajs/eden": "^1.4.1",
     "@fontsource/ubuntu": "^5.2.7",
+    "@fontsource/ubuntu-mono": "^5.2.8",
     "@lucide/svelte": "^0.544.0",
     "@unocss/reset": "^66.5.1",
     "clsx": "^2.1.1",

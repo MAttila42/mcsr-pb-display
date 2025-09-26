@@ -1,5 +1,5 @@
 import { setCache } from './lib/stores/cache'
-import { fetchBulkPbs, getPb } from './lib/utils'
+import { fetchBulkPbs, formatTime, getPb } from './lib/utils'
 
 if (typeof browser === 'undefined') {
   // @ts-expect-error build time
@@ -12,6 +12,16 @@ const NAME = 'span.chat-author__display-name'
 const HANDLED_ATTR = 'data-pb-handled'
 
 const PB_TTL = 15 * 60 * 1000
+
+function getCookieValue(name: string) {
+  const prefix = `${name}=`
+  const raw = document.cookie
+    .split('; ')
+    .find(row => row.startsWith(prefix))
+  if (!raw)
+    return undefined
+  return decodeURIComponent(raw.slice(prefix.length))
+}
 
 function processNode(node: Element) {
   if (!(node instanceof HTMLElement))
@@ -67,8 +77,26 @@ void (async () => {
 })()
 
 window.onload = async () => {
-  const authToken = document.cookie.split('; ').find(row => row.startsWith('auth-token='))?.split('=')[1]
-  await browser.storage.local.set({ authToken })
+  const authToken = getCookieValue('auth-token')
+  const login = getCookieValue('login')
+
+  const toSet: Record<string, string> = {}
+  const toRemove: string[] = []
+
+  if (authToken)
+    toSet.authToken = authToken
+  else
+    toRemove.push('authToken')
+
+  if (login)
+    toSet.login = login
+  else
+    toRemove.push('login')
+
+  if (Object.keys(toSet).length > 0)
+    await browser.storage.local.set(toSet)
+  if (toRemove.length > 0)
+    await browser.storage.local.remove(toRemove)
 }
 
 async function modifyNode(node: HTMLElement) {
@@ -81,18 +109,12 @@ async function modifyNode(node: HTMLElement) {
   if (!pb)
     return
 
-  const date = new Date(pb)
-  const hours = date.getUTCHours()
-  const minutes = date.getUTCMinutes().toString().padStart(2, '0')
-  const seconds = date.getUTCSeconds().toString().padStart(2, '0')
-  const formatted = hours > 0 ? `${hours}:${minutes}:${seconds}` : `${minutes}:${seconds}`
-
   const badgesNode = node.querySelector(BADGES)
   if (!badgesNode)
     return
   if (!node.querySelector('.pb-badge')) {
     const pbBadge = document.createElement('span')
-    pbBadge.textContent = formatted
+    pbBadge.textContent = formatTime(pb)
     pbBadge.className = 'pb-badge'
     badgesNode.appendChild(pbBadge)
   }

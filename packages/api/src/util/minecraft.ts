@@ -1,9 +1,11 @@
 import { createThrottledQueue } from './throttle'
 
-const LOGIN = 'https://api.minecraftservices.com/authentication/login_with_xbox'
-const ENTITLEMENTS = 'https://api.minecraftservices.com/entitlements/license'
-const PROFILE = 'https://api.minecraftservices.com/minecraft/profile'
-const PROFILE_LOOKUP = 'https://api.minecraftservices.com/minecraft/profile/lookup'
+const MC = 'https://api.minecraftservices.com'
+
+const LOGIN = `${MC}/authentication/login_with_xbox`
+const ENTITLEMENTS = `${MC}/entitlements/license`
+const PROFILE = `${MC}/minecraft/profile`
+const PROFILE_LOOKUP = `${MC}/minecraft/profile/lookup`
 
 const REQUESTS_PER_WINDOW = 600
 const WINDOW_MS = 10 * 60 * 1000

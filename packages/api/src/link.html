@@ -26,7 +26,10 @@
       if (!response.ok)
         throw new Error(`Server rejected the token.`)
 
-      window.location.href = '/auth/microsoft?profile=xbox'
+      const param = new URLSearchParams(window.location.search)
+      const profile = param.get('profile')
+
+      window.location.href = `/auth/microsoft?profile=${profile}`
     })()
   </script>
 </body>

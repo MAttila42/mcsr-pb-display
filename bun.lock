@@ -37,6 +37,7 @@
       "dependencies": {
         "@elysiajs/eden": "^1.4.1",
         "@fontsource/ubuntu": "^5.2.7",
+        "@fontsource/ubuntu-mono": "^5.2.8",
         "@lucide/svelte": "^0.544.0",
         "@unocss/reset": "^66.5.1",
         "clsx": "^2.1.1",
@@ -216,6 +217,8 @@
     "@floating-ui/utils": ["@floating-ui/utils@0.2.10", "", {}, "sha512-aGTxbpbg8/b5JfU1HXSrbH3wXZuLPJcNEcZQFMxLs3oSzgtVu6nFPkbbGGUvBcUjKV2YyB9Wxxabo+HEH9tcRQ=="],
 
     "@fontsource/ubuntu": ["@fontsource/ubuntu@5.2.7", "", {}, "sha512-LRhiKD1lbpdreOcghtVbZTvO0bwmV371T+Cst8sMKMG9k9JZUgcc6fMPFaiQ3hH6kIuoi8fx3ST41jsKE0t6Fw=="],
+
+    "@fontsource/ubuntu-mono": ["@fontsource/ubuntu-mono@5.2.8", "", {}, "sha512-N4nT8+GYWWcDODVSBLU4f3PycZQH9YIF6SypDI0rti3HrLqcXFS9u6wMvAd9vx1FmjAQkYv7Ld9CZ8XYTEOD0A=="],
 
     "@humanfs/core": ["@humanfs/core@0.19.1", "", {}, "sha512-5DyQ4+1JEUzejeK1JGICcideyfUbGixgS9jNgex5nqkW+cY7WZhxBigmieN5Qnw9ZosSNVC9KQKyb+GUaGyKUA=="],
 

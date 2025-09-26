@@ -12,19 +12,41 @@ export const user = new Elysia({
   aot: false,
   prefix: '/user',
 })
+  .get('/:tw', async ({ params, status }) => {
+    const tw = params.tw.toLowerCase()
+    const [user] = await db
+      .select()
+      .from(Users)
+      .where(eq(Users.twLogin, tw))
+    if (!user)
+      return status(404, 'User not found.')
+
+    const ranked = user.mcUUID ? await rankedUser(user.mcUUID) : null
+
+    return {
+      twLogin: user.twLogin,
+      rankedInfo: {
+        mcUUID: user.mcUUID,
+        mcUsername: user.mcUsername,
+        pb: ranked ? ranked.statistics.total.bestTime.ranked : null,
+        elo: ranked ? ranked.eloRate : null,
+      },
+    }
+  })
+
   .get('/:tw/pb', async ({ params, status }) => {
     const tw = params.tw.toLowerCase()
     const [user] = await db
       .select()
       .from(Users)
-      .where(eq(Users.twitchLogin, tw))
+      .where(eq(Users.twLogin, tw))
 
     if (!user)
       return status(404, 'User not found.')
-    if (!user.minecraftUUID)
+    if (!user.mcUUID)
       return status(404, 'User has no linked account.')
 
-    const cacheKey = `pb:${user.twitchLogin}`
+    const cacheKey = `pb:${user.twLogin}`
     const cached = getCache<number>(cacheKey)
 
     if (cached && !cached.stale)
@@ -32,7 +54,7 @@ export const user = new Elysia({
 
     if (cached && cached.stale) {
       ;(async () => {
-        const ranked = await rankedUser(user.minecraftUUID)
+        const ranked = await rankedUser(user.mcUUID)
         if (!ranked)
           return
         const newPb = ranked.statistics.total.bestTime.ranked
@@ -41,25 +63,26 @@ export const user = new Elysia({
       return cached.value
     }
 
-    const ranked = await rankedUser(user.minecraftUUID)
+    const ranked = await rankedUser(user.mcUUID)
     if (!ranked)
       return status(404, 'User has no ranked stats.')
     const pb = ranked.statistics.total.bestTime.ranked
     setCache(cacheKey, pb)
     return pb
   })
+
   .post('/pbs', async ({ body, status }) => {
     try {
-      const payload = (typeof body === 'string' ? JSON.parse(body) : body) as { tw: string[] }
-      const twList = Array.isArray(payload?.tw) ? payload.tw.map(t => t.toLowerCase()).slice(0, 200) : []
+      const payload = (typeof body === 'string' ? JSON.parse(body) : body) as string[]
+      const twList = payload.map(t => t.toLowerCase()).slice(0, 200)
       if (twList.length === 0)
-        return status(400, 'Missing tw array')
+        return status(400, 'Missing array of Twitch usernames.')
 
       const users = await db
         .select()
         .from(Users)
-        .where(inArray(Users.twitchLogin, twList))
-      const byTw = new Map(users.map(u => [u.twitchLogin.toLowerCase(), u]))
+        .where(inArray(Users.twLogin, twList))
+      const byTw = new Map(users.map(u => [u.twLogin.toLowerCase(), u]))
 
       const results: Record<string, number | null> = Object.create(null)
 
@@ -80,18 +103,18 @@ export const user = new Elysia({
         }
 
         const user = byTw.get(tw)
-        if (!user || !user.minecraftUUID) {
+        if (!user || !user.mcUUID) {
           results[tw] = null
           continue
         }
 
         if (cached && cached.stale) {
           results[tw] = cached.value
-          staleToRefresh.push({ tw, uuid: user.minecraftUUID })
+          staleToRefresh.push({ tw, uuid: user.mcUUID })
           continue
         }
 
-        staleToRefresh.push({ tw, uuid: user.minecraftUUID })
+        staleToRefresh.push({ tw, uuid: user.mcUUID })
       }
 
       for (const item of staleToRefresh) {

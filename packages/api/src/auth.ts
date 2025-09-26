@@ -85,17 +85,18 @@ export const auth = createAuth({
     const [existing] = await db
       .select()
       .from(Users)
-      .where(eq(Users.twitchLogin, twitch.login))
+      .where(eq(Users.twLogin, twitch.login))
     if (existing) {
       await db
         .update(Users)
-        .set({ minecraftUUID: minecraft.id })
-        .where(eq(Users.twitchLogin, twitch.login))
+        .set({ mcUUID: minecraft.id })
+        .where(eq(Users.twLogin, twitch.login))
     }
     else {
       await db.insert(Users).values({
-        twitchLogin: twitch.login,
-        minecraftUUID: minecraft.id,
+        twLogin: twitch.login,
+        mcUUID: minecraft.id,
+        mcUsername: minecraft.name,
       })
     }
 
