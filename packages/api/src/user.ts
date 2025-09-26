@@ -34,43 +34,6 @@ export const user = new Elysia({
     }
   })
 
-  .get('/:tw/pb', async ({ params, status }) => {
-    const tw = params.tw.toLowerCase()
-    const [user] = await db
-      .select()
-      .from(Users)
-      .where(eq(Users.twLogin, tw))
-
-    if (!user)
-      return status(404, 'User not found.')
-    if (!user.mcUUID)
-      return status(404, 'User has no linked account.')
-
-    const cacheKey = `pb:${user.twLogin}`
-    const cached = getCache<number>(cacheKey)
-
-    if (cached && !cached.stale)
-      return cached.value
-
-    if (cached && cached.stale) {
-      ;(async () => {
-        const ranked = await rankedUser(user.mcUUID)
-        if (!ranked)
-          return
-        const newPb = ranked.statistics.total.bestTime.ranked
-        setCache(cacheKey, newPb)
-      })()
-      return cached.value
-    }
-
-    const ranked = await rankedUser(user.mcUUID)
-    if (!ranked)
-      return status(404, 'User has no ranked stats.')
-    const pb = ranked.statistics.total.bestTime.ranked
-    setCache(cacheKey, pb)
-    return pb
-  })
-
   .post('/pbs', async ({ body, status }) => {
     try {
       const payload = (typeof body === 'string' ? JSON.parse(body) : body) as string[]
@@ -84,54 +47,69 @@ export const user = new Elysia({
         .where(inArray(Users.twLogin, twList))
       const byTw = new Map(users.map(u => [u.twLogin.toLowerCase(), u]))
 
+      const cacheKeyFor = (tw: string) => `pb:${tw}`
       const results: Record<string, number | null> = Object.create(null)
 
       const set = (tw: string, value: number | null | undefined) => {
-        const cacheKey = `pb:${tw}`
         if (value != null)
-          setCache(cacheKey, value)
+          setCache(cacheKeyFor(tw), value)
         results[tw] = value ?? null
       }
 
-      const staleToRefresh: { tw: string, uuid: string }[] = []
+      const refreshCache = (tw: string, uuid: string) => {
+        void (async () => {
+          try {
+            const ranked = await rankedUser(uuid)
+            const pb = ranked?.statistics.total.bestTime.ranked
+            if (typeof pb === 'number')
+              setCache(cacheKeyFor(tw), pb)
+          }
+          catch (error) {
+            console.error(`Failed to refresh PB cache for ${tw}`, error)
+          }
+        })()
+      }
+
+      const toFetch: { tw: string, uuid: string }[] = []
       for (const tw of twList) {
-        const cacheKey = `pb:${tw}`
-        const cached = getCache<number>(cacheKey)
+        const cached = getCache<number>(cacheKeyFor(tw))
+        const user = byTw.get(tw)
+
         if (cached && !cached.stale) {
           results[tw] = cached.value
           continue
         }
 
-        const user = byTw.get(tw)
+        if (cached && cached.stale) {
+          results[tw] = cached.value
+          if (user?.mcUUID)
+            refreshCache(tw, user.mcUUID)
+          continue
+        }
+
         if (!user || !user.mcUUID) {
           results[tw] = null
           continue
         }
 
-        if (cached && cached.stale) {
-          results[tw] = cached.value
-          staleToRefresh.push({ tw, uuid: user.mcUUID })
-          continue
-        }
-
-        staleToRefresh.push({ tw, uuid: user.mcUUID })
+        toFetch.push({ tw, uuid: user.mcUUID })
       }
 
-      for (const item of staleToRefresh) {
+      await Promise.all(toFetch.map(async ({ tw, uuid }) => {
         try {
-          const ranked = await rankedUser(item.uuid)
+          const ranked = await rankedUser(uuid)
           if (!ranked) {
-            set(item.tw, null)
-            continue
+            results[tw] = null
+            return
           }
           const pb = ranked.statistics.total.bestTime.ranked as number | undefined
-          set(item.tw, typeof pb === 'number' ? pb : null)
+          set(tw, typeof pb === 'number' ? pb : null)
         }
-        catch {
-          if (results[item.tw] == null)
-            results[item.tw] = null
+        catch (error) {
+          console.error(`Failed to fetch PB for ${tw}`, error)
+          results[tw] ??= null
         }
-      }
+      }))
 
       return results
     }

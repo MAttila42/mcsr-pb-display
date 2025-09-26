@@ -1,5 +1,4 @@
-import { setCache } from './cache'
-import { fetchBulkPbs, formatTime, getPb } from './pb'
+import { formatTime, getPb } from './pb'
 
 if (typeof browser === 'undefined') {
   // @ts-expect-error build time
@@ -10,8 +9,6 @@ const CHAT_LINE = 'div.chat-line__message-container'
 const BADGES = 'span.chat-line__message--badges'
 const NAME = 'span.chat-author__display-name'
 const HANDLED_ATTR = 'data-pb-handled'
-
-const PB_TTL = 15 * 60 * 1000
 
 function getCookieValue(name: string) {
   const prefix = `${name}=`
@@ -51,30 +48,6 @@ const observer = new MutationObserver((mutations) => {
   }
 })
 observer.observe(document.body, { childList: true, subtree: true })
-
-void (async () => {
-  const nodes = Array.from(document.querySelectorAll(CHAT_LINE)) as HTMLElement[]
-  if (nodes.length === 0)
-    return
-  const names = new Set<string>()
-  for (const node of nodes) {
-    const nameEl = node.querySelector(NAME) as HTMLElement | null
-    const tw = nameEl?.textContent?.trim()
-    if (tw)
-      names.add(tw.toLowerCase())
-  }
-  if (names.size > 0) {
-    try {
-      const map = await fetchBulkPbs(Array.from(names))
-      for (const [tw, value] of Object.entries(map))
-        setCache(`pb:${tw.toLowerCase()}`, value ?? undefined, PB_TTL)
-    }
-    catch (err) {
-      console.error('[mcsr-pb-display] bulk fetch failed', err)
-    }
-  }
-  nodes.forEach(processNode)
-})()
 
 window.onload = async () => {
   const authToken = getCookieValue('auth-token')
