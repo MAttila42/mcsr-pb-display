@@ -4,6 +4,8 @@ Browser extension to have your Minecraft Speedrun PB displayed next to your name
 
 ## Contributing
 
+Contributions are welcome! Please open an issue or submit a pull request.
+
 ### Tech Stack
 
 This app is made with
@@ -25,7 +27,7 @@ See documentation for each to get started.
 
 ### Setup
 
-Example commands use [@antfu/ni](https://github.com/antfu-collective/ni).
+Example commands with [@antfu/ni](https://github.com/antfu-collective/ni).
 
 ```sh
 ni # Install dependencies
@@ -38,8 +40,8 @@ nr setup:db # Setup the database (use in the `api` package)
 
 This project is a monorepo with two packages:
 
-- `extension`: The Svelte browser extension
 - `api`: The Elysia backend API
+- `extension`: The Svelte browser extension
 
 Some commands require you to be in the correct package directory. Check the `package.json` files for the scripts.
 
@@ -54,7 +56,7 @@ nr build
 
 #### Database
 
-For use in the `api` package.
+Use them in the `api` package.
 
 ```sh
 nr db # drizzle-kit alias, use any subcommands available
@@ -66,7 +68,7 @@ nr db push # Push schema changes without SQL file generations
 nr db studio # Start real time SQL explorer
 ```
 
-For more information, check the [documentation](https://orm.drizzle.team/docs/kit-overview).
+For more information check the [Drizzle documentation](https://orm.drizzle.team/docs/kit-overview).
 
 #### Other
 
