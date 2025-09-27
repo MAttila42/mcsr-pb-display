@@ -15,7 +15,7 @@
     img={twitch}
     alt='Twitch Logo'
     --color='#9244ff'
-  >{name}</Box>
+  >@{name}</Box>
 {:else}
   <Card.Root class='b-#ff6f00 bg-#ff6f00/35'>
     <Card.Header>

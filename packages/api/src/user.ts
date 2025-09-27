@@ -1,3 +1,4 @@
+import type { UserResponse } from './types/user'
 import { eq, inArray } from 'drizzle-orm'
 import { Elysia } from 'elysia'
 import { db } from './db'
@@ -23,7 +24,7 @@ export const user = new Elysia({
 
     const ranked = user.mcUUID ? await rankedUser(user.mcUUID) : null
 
-    return {
+    const payload: UserResponse = {
       twLogin: user.twLogin,
       rankedInfo: {
         mcUUID: user.mcUUID,
@@ -32,6 +33,7 @@ export const user = new Elysia({
         elo: ranked ? ranked.eloRate : null,
       },
     }
+    return payload
   })
 
   .post('/pbs', async ({ body, status }) => {

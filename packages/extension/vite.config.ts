@@ -30,7 +30,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '$lib': path.resolve('./src/lib'),
-      '@backend': path.resolve('../backend/src'),
+      '@api': path.resolve('../api/src'),
     },
   },
 })

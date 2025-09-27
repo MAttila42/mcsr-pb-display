@@ -1,6 +1,6 @@
-import presetIcons from '@unocss/preset-icons'
 import {
   defineConfig,
+  presetIcons,
   presetWind3,
   transformerDirectives,
   transformerVariantGroup,

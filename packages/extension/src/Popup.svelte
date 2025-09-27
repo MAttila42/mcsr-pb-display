@@ -1,5 +1,7 @@
 <script lang='ts'>
+  import type { UserResponse } from '@api/types/user'
   import Ranked from '$lib/components/Ranked.svelte'
+  import Search from '$lib/components/Search.svelte'
   import Twitch from '$lib/components/Twitch.svelte'
   import * as Card from '$lib/components/ui/card'
   import { onMount } from 'svelte'
@@ -9,7 +11,7 @@
   import '@fontsource/ubuntu-mono'
   import logo from '/public/icon.png'
 
-  type StoredState = {
+  interface StoredState {
     authToken?: string
     login?: string
   }
@@ -17,15 +19,7 @@
   let token: string | undefined = $state('')
   let login: string | undefined = $state('')
   let isLoaded: boolean = $state(false)
-  let user: {
-    twLogin: string
-    rankedInfo: {
-      mcUUID: string
-      mcUsername: string
-      pb: number | null
-      elo: number | null
-    } | null
-  } = $state({
+  let user: UserResponse = $state({
     twLogin: '',
     rankedInfo: null,
   })
@@ -45,13 +39,15 @@
         console.error('Failed to fetch user data')
     }
   })
+
 </script>
 
-<main class='m-4 h-max w-xs flex flex-col gap-3'>
+<main class='m-4 h-max w-xs flex flex-col gap-4 max-h-800'>
   <div class='my-2 flex flex-row items-center justify-center gap-4'>
     <img src={logo} alt='Logo' class='size-12'>
     <h1 class='text-2xl font-bold'>MCSR PB Display</h1>
   </div>
+  <Search />
   <div class='flex flex-col gap-3'>
     {#if isLoaded}
       <h1 class='font-bold'>Your accounts:</h1>
