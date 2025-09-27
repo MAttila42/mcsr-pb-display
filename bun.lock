@@ -46,6 +46,7 @@
         "vite-plugin-web-extension": "^4.4.5",
       },
       "devDependencies": {
+        "@iconify-json/fluent": "^1.2.31",
         "@sveltejs/vite-plugin-svelte": "^6.2.0",
         "@tsconfig/svelte": "^5.0.5",
         "@types/webextension-polyfill": "^0.12.3",
@@ -227,6 +228,8 @@
     "@humanwhocodes/module-importer": ["@humanwhocodes/module-importer@1.0.1", "", {}, "sha512-bxveV4V8v5Yb4ncFTT3rPSgZBOpCkjfK0y4oVVVJwIuDVBRMDXrPyXRL988i5ap9m9bnyEEjWfm5WkBmtffLfA=="],
 
     "@humanwhocodes/retry": ["@humanwhocodes/retry@0.4.3", "", {}, "sha512-bV0Tgo9K4hfPCek+aMAn81RppFKv2ySDQeMoSZuvTASywNTnVJCArCZE2FWqpvIatKu7VMRLWlR1EazvVhDyhQ=="],
+
+    "@iconify-json/fluent": ["@iconify-json/fluent@1.2.31", "", { "dependencies": { "@iconify/types": "*" } }, "sha512-koe2/PVoRS6qzhkGAzbWcvTLImRx+pdO9dtzoJpB8xwmhDL3hbfSyU88uBxIVTVaApkiVdkDoXOvZ1EjyLQbyQ=="],
 
     "@iconify/types": ["@iconify/types@2.0.0", "", {}, "sha512-+wluvCrRhXrhyOmRDJ3q8mux9JkKy5SJ/v8ol2tu4FVjyYvtEzkc/3pK15ET6RKg4b4w4BmTk1+gsCUhf21Ykg=="],
 

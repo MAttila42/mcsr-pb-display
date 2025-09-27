@@ -58,7 +58,7 @@
         type='submit'
         disabled={lookupLoading}
       >
-        <div class='i-fluent:chevron-right-12-filled'>&#62;</div>
+        <div class='i-fluent-search-12-filled size-4'></div>
       </Button>
     </form>
     {#if lookupError}
