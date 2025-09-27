@@ -1,7 +1,7 @@
 <script lang='ts'>
   import ranked from '$lib/assets/ranked.png'
   import { formatTime } from '$lib/utils'
-  import Account from './Account.svelte'
+  import Box from './Box.svelte'
   import { Button } from './ui/button'
 
   const {
@@ -25,15 +25,22 @@
   }
 </script>
 
-<Account
+<Box
   img={ranked}
   alt='Ranked Logo'
   --color='#86ce34'
 >
   {#if info}
     <span class='flex flex-col items-end'>
-      <span>ELO: {info.elo ?? 'N/A'}</span>
-      <span>PB: {info.pb !== null ? formatTime(info.pb) : 'N/A'}</span>
+      <span>{info.mcUsername}</span>
+      <span>
+        <span class='font-medium text-foreground/70 text-lg'>ELO:</span>
+        {info.elo ?? 'N/A'}
+      </span>
+      <span>
+        <span class='font-medium text-foreground/70 text-lg'>PB:</span>
+        {info.pb !== null ? formatTime(info.pb) : 'N/A'}
+      </span>
     </span>
   {:else}
     <Button
@@ -41,4 +48,4 @@
       onclick={link}
     >Link</Button>
   {/if}
-</Account>
+</Box>

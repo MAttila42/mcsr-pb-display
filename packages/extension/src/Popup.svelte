@@ -52,16 +52,19 @@
     <img src={logo} alt='Logo' class='size-12'>
     <h1 class='text-2xl font-bold'>MCSR PB Display</h1>
   </div>
-  {#if isLoaded}
-    <Twitch name={login} />
-    {#if login}
-      <Ranked token={token!} info={user.rankedInfo} />
+  <div class='flex flex-col gap-3'>
+    {#if isLoaded}
+      <h1 class='font-bold'>Your accounts:</h1>
+      <Twitch name={login} />
+      {#if login}
+        <Ranked token={token!} info={user.rankedInfo} />
+      {/if}
+    {:else}
+      <Card.Root>
+        <Card.Header>
+          <Card.Title>Loading...</Card.Title>
+        </Card.Header>
+      </Card.Root>
     {/if}
-  {:else}
-    <Card.Root>
-      <Card.Header>
-        <Card.Title>Loading...</Card.Title>
-      </Card.Header>
-    </Card.Root>
-  {/if}
+  </div>
 </main>

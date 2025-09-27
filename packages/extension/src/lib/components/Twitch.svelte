@@ -1,7 +1,7 @@
 <script lang='ts'>
   import twitch from '$lib/assets/twitch.png'
   import * as Card from '$lib/components/ui/card'
-  import Account from './Account.svelte'
+  import Box from './Box.svelte'
 
   const {
     name,
@@ -11,11 +11,11 @@
 </script>
 
 {#if name}
-  <Account
+  <Box
     img={twitch}
     alt='Twitch Logo'
     --color='#9244ff'
-  >{name}</Account>
+  >{name}</Box>
 {:else}
   <Card.Root class='b-#ff6f00 bg-#ff6f00/35'>
     <Card.Header>
