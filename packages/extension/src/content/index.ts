@@ -7,6 +7,7 @@ if (typeof browser === 'undefined') {
 
 const CHAT_LINE = 'div.chat-line__message-container'
 const BADGES = 'span.chat-line__message--badges'
+const BADGES_CLASS = 'chat-line__message--badges'
 const NAME = 'span.chat-author__display-name'
 const HANDLED_ATTR = 'data-pb-handled'
 
@@ -74,7 +75,10 @@ window.onload = async () => {
 
 async function modifyNode(node: HTMLElement) {
   const nameEl = node.querySelector(NAME) as HTMLElement | null
-  const tw = nameEl?.textContent?.trim()
+  if (!nameEl)
+    return
+
+  const tw = nameEl.textContent?.trim()
   if (!tw)
     return
 
@@ -82,9 +86,14 @@ async function modifyNode(node: HTMLElement) {
   if (!pb)
     return
 
-  const badgesNode = node.querySelector(BADGES)
-  if (!badgesNode)
-    return
+  let badgesNode = node.querySelector(BADGES) as HTMLElement | null
+  if (!badgesNode) {
+    badgesNode = document.createElement('span')
+    badgesNode.classList.add(BADGES_CLASS)
+
+    const badgeContainer = nameEl.parentElement ?? node
+    badgeContainer.insertBefore(badgesNode, nameEl)
+  }
   if (!node.querySelector('.pb-badge')) {
     const pbBadge = document.createElement('span')
     pbBadge.textContent = formatTime(pb)
