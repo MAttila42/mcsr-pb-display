@@ -50,7 +50,6 @@
   <Search />
   <div class='flex flex-col gap-3'>
     {#if isLoaded}
-      <h1 class='font-bold'>Your accounts:</h1>
       <Twitch name={login} />
       {#if login}
         <Ranked token={token!} />

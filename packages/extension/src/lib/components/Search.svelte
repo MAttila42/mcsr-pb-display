@@ -67,11 +67,17 @@
       <Card.Root class='py-3 text-sm bg-background'>
         <Card.Content class='px-4'>
           <div class='space-y-3'>
-            <div class='flex items-center gap-3'>
-              <div class='w-6'>
-                <img src={twitchLogo} alt='Twitch logo' class='h-6'>
+            <div class='flex items-center justify-between gap-3'>
+              <div class='flex items-center gap-3'>
+                <div class='w-6'>
+                  <img src={twitchLogo} alt='Twitch logo' class='h-6'>
+                </div>
+                <span class='font-medium uppercase tracking-wide text-xs text-foreground/60'>Twitch</span>
               </div>
-              <p class='font-semibold text-base leading-tight'>@{lookupResult.twLogin}</p>
+              <a
+                href={`https://www.twitch.tv/${lookupResult.twLogin}`}
+                class='font-semibold text-base leading-tight truncate'
+              >{lookupResult.twLogin}</a>
             </div>
             <div class='h-px bg-foreground/10'></div>
             <div class='space-y-2'>
@@ -82,7 +88,7 @@
               {#if lookupResult.rankedInfo}
                 <div class='flex flex-row justify-between'>
                   <span class='font-medium'>IGN</span>
-                  <span>{lookupResult.rankedInfo.mcUsername}</span>
+                  <a class='truncate' href={`https://mcsrranked.com/stats/${lookupResult.rankedInfo.mcUsername}`}>{lookupResult.rankedInfo.mcUsername}</a>
                 </div>
                 <div class='flex flex-row justify-between'>
                   <span class='font-medium'>ELO</span>
@@ -102,3 +108,9 @@
     {/if}
   </Card.Content>
 </Card.Root>
+
+<style>
+  a {
+    --uno: 'text-foreground/90 underline decoration-foreground/50 transition-200 hover:(text-foreground decoration-foreground)';
+  }
+</style>
