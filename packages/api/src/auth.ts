@@ -89,7 +89,10 @@ export const auth = createAuth({
     if (existing) {
       await db
         .update(Users)
-        .set({ mcUUID: minecraft.id })
+        .set({
+          mcUUID: minecraft.id,
+          mcUsername: minecraft.name,
+        })
         .where(eq(Users.twLogin, twitch.login))
     }
     else {

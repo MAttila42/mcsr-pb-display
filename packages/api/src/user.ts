@@ -26,12 +26,14 @@ export const user = new Elysia({
 
     const payload: UserResponse = {
       twLogin: user.twLogin,
-      rankedInfo: {
-        mcUUID: user.mcUUID,
-        mcUsername: user.mcUsername,
-        pb: ranked ? ranked.statistics.total.bestTime.ranked : null,
-        elo: ranked ? ranked.eloRate : null,
-      },
+      rankedInfo: user.mcUUID
+        ? {
+            mcUUID: user.mcUUID,
+            mcUsername: user.mcUsername!,
+            pb: ranked ? ranked.statistics.total.bestTime.ranked : null,
+            elo: ranked ? ranked.eloRate : null,
+          }
+        : null,
     }
     return payload
   })

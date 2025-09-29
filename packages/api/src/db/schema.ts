@@ -2,8 +2,8 @@ import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 
 export const Users = sqliteTable('users', {
   twLogin: text('tw_login').primaryKey(),
-  mcUUID: text('mc_uuid').notNull(),
-  mcUsername: text('mc_username').notNull(),
+  mcUUID: text('mc_uuid'),
+  mcUsername: text('mc_username'),
   createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
 })

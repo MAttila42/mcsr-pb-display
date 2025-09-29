@@ -1,9 +1,9 @@
 <script lang='ts'>
-  import type { UserResponse } from '@api/types/user'
   import Ranked from '$lib/components/Ranked.svelte'
   import Search from '$lib/components/Search.svelte'
   import Twitch from '$lib/components/Twitch.svelte'
   import * as Card from '$lib/components/ui/card'
+  import { user } from '$lib/stores/user.svelte'
   import { onMount } from 'svelte'
   import browser from 'webextension-polyfill'
   import '@unocss/reset/tailwind.css'
@@ -19,10 +19,6 @@
   let token: string | undefined = $state('')
   let login: string | undefined = $state('')
   let isLoaded: boolean = $state(false)
-  let user: UserResponse = $state({
-    twLogin: '',
-    rankedInfo: null,
-  })
 
   onMount(async () => {
     const raw = await browser.storage.local.get(['authToken', 'login'])
@@ -33,10 +29,14 @@
 
     if (login) {
       const res = await fetch(`${import.meta.env.VITE_API_URL}/user/${login}`)
-      if (res.ok)
-        user = await res.json()
-      else
+      if (res.ok) {
+        const userData = await res.json()
+        user.twLogin = userData.twLogin
+        user.rankedInfo = userData.rankedInfo
+      }
+      else {
         console.error('Failed to fetch user data')
+      }
     }
   })
 
@@ -53,7 +53,7 @@
       <h1 class='font-bold'>Your accounts:</h1>
       <Twitch name={login} />
       {#if login}
-        <Ranked token={token!} info={user.rankedInfo} />
+        <Ranked token={token!} />
       {/if}
     {:else}
       <Card.Root>
