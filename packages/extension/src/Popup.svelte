@@ -59,15 +59,27 @@
     {/if}
   </div>
   <KoFi />
-  <div class='flex flex-row items-center justify-center gap-2'>
-    <span class='text-foreground/70'>Source-code on</span>
-    <a
-      href='https://github.com/MAttila42/mcsr-pb-display'
-      class='flex flex-row items-center gap-1'
-    >
-      <span class='i-codicon:github-inverted'></span>
-      <span>GitHub</span>
-    </a>
+  <div class='flex flex-col text-sm'>
+    <div class='flex flex-row items-center justify-center gap-2'>
+      <span class='text-foreground/70'>Idea from</span>
+      <a
+        href='https://www.twitch.tv/couriway'
+        class='flex flex-row items-center gap-1'
+      >
+        <span class='i-mdi:twitch size-5'></span>
+        <span>Couriway</span>
+      </a>
+    </div>
+    <div class='flex flex-row items-center justify-center gap-2'>
+      <span class='text-foreground/70'>Source-code on</span>
+      <a
+        href='https://github.com/MAttila42/mcsr-pb-display'
+        class='flex flex-row items-center gap-1'
+      >
+        <span class='i-mdi:github size-5'></span>
+        <span>GitHub</span>
+      </a>
+    </div>
   </div>
 </main>
 
