@@ -1,6 +1,8 @@
+import process from 'node:process'
 import { createThrottledQueue } from './throttle'
 
-const MC = 'https://api.minecraftservices.com'
+const MC = (process.env.MC_API_OVERRIDE ?? '').trim()
+  || 'https://api.minecraftservices.com'
 
 const LOGIN = `${MC}/authentication/login_with_xbox`
 const ENTITLEMENTS = `${MC}/entitlements/license`
