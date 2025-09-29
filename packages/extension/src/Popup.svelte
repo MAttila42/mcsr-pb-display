@@ -1,8 +1,8 @@
 <script lang='ts'>
+  import KoFi from '$lib/components/KoFi.svelte'
   import Ranked from '$lib/components/Ranked.svelte'
   import Search from '$lib/components/Search.svelte'
   import Twitch from '$lib/components/Twitch.svelte'
-  import * as Card from '$lib/components/ui/card'
   import { user } from '$lib/stores/user.svelte'
   import { onMount } from 'svelte'
   import browser from 'webextension-polyfill'
@@ -42,7 +42,7 @@
 
 </script>
 
-<main class='m-4 h-max w-xs flex flex-col gap-4 max-h-800'>
+<main class='m-4 h-max w-xs flex flex-col gap-6 max-h-800'>
   <div class='my-2 flex flex-row items-center justify-center gap-4'>
     <img src={logo} alt='Logo' class='size-12'>
     <h1 class='text-2xl font-bold'>MCSR PB Display</h1>
@@ -56,11 +56,8 @@
         <Ranked token={token!} />
       {/if}
     {:else}
-      <Card.Root>
-        <Card.Header>
-          <Card.Title>Loading...</Card.Title>
-        </Card.Header>
-      </Card.Root>
+      Loading...
     {/if}
   </div>
+  <KoFi />
 </main>

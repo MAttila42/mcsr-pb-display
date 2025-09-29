@@ -4,18 +4,20 @@
   const {
     img,
     alt,
+    class: className,
     secondary,
     children,
   }: {
     img: string
     alt: string
+    class?: string
     secondary?: () => any
     children?: () => any
   } = $props()
 </script>
 
 <Card.Root
-  class='w-full p-4'
+  class={`w-full p-4 ${className}`}
   style='background-color: color-mix(in srgb, var(--color) 25%, transparent); border-color: var(--color);'
 >
   <Card.Content class='w-full flex flex-row justify-between text-xl font-bold text-right p-0 gap-6'>
