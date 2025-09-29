@@ -108,9 +108,3 @@
     {/if}
   </Card.Content>
 </Card.Root>
-
-<style>
-  a {
-    --uno: 'text-foreground/90 underline decoration-foreground/50 transition-200 hover:(text-foreground decoration-foreground)';
-  }
-</style>

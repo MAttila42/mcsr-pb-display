@@ -23,8 +23,10 @@
     "vite-plugin-web-extension": "^4.4.5"
   },
   "devDependencies": {
+    "@iconify-json/codicon": "^1.2.30",
     "@iconify-json/fluent": "^1.2.31",
     "@iconify-json/ic": "^1.2.4",
+    "@iconify-json/iconoir": "^1.2.9",
     "@sveltejs/vite-plugin-svelte": "^6.2.0",
     "@tsconfig/svelte": "^5.0.5",
     "@types/webextension-polyfill": "^0.12.3",

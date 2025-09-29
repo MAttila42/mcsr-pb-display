@@ -59,4 +59,20 @@
     {/if}
   </div>
   <KoFi />
+  <div class='flex flex-row items-center justify-center gap-2'>
+    <span class='text-foreground/70'>Source-code on</span>
+    <a
+      href='https://github.com/MAttila42/mcsr-pb-display'
+      class='flex flex-row items-center gap-1'
+    >
+      <span class='i-codicon:github-inverted'></span>
+      <span>GitHub</span>
+    </a>
+  </div>
 </main>
+
+<style>
+  :global(a) {
+    --uno: 'text-foreground/90 underline decoration-foreground/50 transition-200 hover:(text-foreground decoration-foreground)';
+  }
+</style>
