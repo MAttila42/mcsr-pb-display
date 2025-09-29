@@ -75,8 +75,9 @@
                 <span class='font-medium uppercase tracking-wide text-xs text-foreground/60'>Twitch</span>
               </div>
               <a
-                href={`https://www.twitch.tv/${lookupResult.twLogin}`}
                 class='font-semibold text-base leading-tight truncate'
+                href={`https://www.twitch.tv/${lookupResult.twLogin}`}
+                target='_blank'
               >{lookupResult.twLogin}</a>
             </div>
             <div class='h-px bg-foreground/10'></div>
@@ -88,7 +89,13 @@
               {#if lookupResult.rankedInfo}
                 <div class='flex flex-row justify-between'>
                   <span class='font-medium'>IGN</span>
-                  <a class='truncate' href={`https://mcsrranked.com/stats/${lookupResult.rankedInfo.mcUsername}`}>{lookupResult.rankedInfo.mcUsername}</a>
+                  <a
+                    class='truncate'
+                    href={`https://mcsrranked.com/stats/${lookupResult.rankedInfo.mcUsername}`}
+                    target='_blank'
+                  >
+                    {lookupResult.rankedInfo.mcUsername}
+                  </a>
                 </div>
                 <div class='flex flex-row justify-between'>
                   <span class='font-medium'>ELO</span>

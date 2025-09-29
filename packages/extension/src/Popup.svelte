@@ -63,8 +63,9 @@
     <div class='flex flex-row items-center justify-center gap-2'>
       <span class='text-foreground/70'>Idea from</span>
       <a
-        href='https://www.twitch.tv/couriway'
         class='flex flex-row items-center gap-1'
+        href='https://www.twitch.tv/couriway'
+        target='_blank'
       >
         <span class='i-mdi:twitch size-5'></span>
         <span>Couriway</span>
@@ -73,8 +74,9 @@
     <div class='flex flex-row items-center justify-center gap-2'>
       <span class='text-foreground/70'>Source-code on</span>
       <a
-        href='https://github.com/MAttila42/mcsr-pb-display'
         class='flex flex-row items-center gap-1'
+        href='https://github.com/MAttila42/mcsr-pb-display'
+        target='_blank'
       >
         <span class='i-mdi:github size-5'></span>
         <span>GitHub</span>
