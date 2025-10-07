@@ -6,7 +6,7 @@ import process from 'node:process'
 import { cors } from '@elysiajs/cors'
 import { createHandler } from '@rttnd/gau/core'
 import { eq } from 'drizzle-orm'
-import { Elysia } from 'elysia'
+import { Elysia, file } from 'elysia'
 
 import { auth } from './auth'
 import { db } from './db'
@@ -26,6 +26,10 @@ const app = new Elysia({
   .mount(handler)
   .use(cors())
   .use(user)
+  .get(
+    '/.well-known/microsoft-identity-association.json',
+    file('./public/.well-known/microsoft-identity-association.json'),
+  )
   .get('/link', () => new Response(link.toString(), {
     headers: { 'Content-Type': 'text/html' },
   }))
