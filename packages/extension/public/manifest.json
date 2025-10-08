@@ -17,9 +17,18 @@
   "host_permissions": [
     "https://*.twitch.tv/"
   ],
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "@mcsr-pb-display",
+      "data_collection_permissions": {
+        "required": [
+          "authenticationInfo",
+          "websiteContent"
+        ]
+      }
+    }
+  },
   "icons": {
-    "48": "icon.png",
-    "96": "icon.png",
     "128": "icon.png"
   },
   "content_scripts": [
