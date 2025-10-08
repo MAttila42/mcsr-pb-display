@@ -8,14 +8,10 @@
     "default_popup": "popup.html"
   },
   "permissions": [
-    "storage",
-    "identity",
-    "cookies",
-    "activeTab",
-    "scripting"
+    "storage"
   ],
   "host_permissions": [
-    "https://*.twitch.tv/"
+    "*://*.twitch.tv/*"
   ],
   "browser_specific_settings": {
     "gecko": {
