@@ -1,6 +1,5 @@
+import { fetchBulkPbs } from './api'
 import { getSessionCache, setSessionCache } from './cache'
-
-const API_URL = import.meta.env.VITE_API_URL
 
 const PB_TTL = 15 * 60 * 1000
 const BATCH_WINDOW_MS = 1000
@@ -30,21 +29,6 @@ export async function getPb(tw: string): Promise<number | undefined> {
   }
 
   return queueBulkFetch(twKey)
-}
-
-/**
- * Fetch multiple PBs in a single request.
- */
-export async function fetchBulkPbs(tws: string[]): Promise<Record<string, number | null>> {
-  const res = await fetch(`${API_URL}/user/pbs`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(tws.map(t => t.toLowerCase())),
-  })
-  if (!res.ok)
-    throw new Error('Failed to fetch bulk PBs')
-  const json = await res.json() as Record<string, number | null>
-  return json
 }
 
 export function formatTime(ms: number): string {
@@ -107,7 +91,7 @@ async function flushPending() {
   }
 
   const queued = pendingNames.splice(0, pendingNames.length)
-  const uniqueNames = Array.from(new Set(queued))
+  const uniqueNames = [...new Set(queued)]
   if (uniqueNames.length === 0)
     return
 
@@ -132,6 +116,11 @@ async function flushPending() {
   }
   catch (err) {
     console.error('[mcsr-pb-display] failed to fetch PBs', err)
+    for (const name of uniqueNames) {
+      const resolvers = resolverMap.get(name)
+      resolvers?.forEach(resolve => resolve(undefined))
+      inFlight.delete(name)
+    }
   }
   finally {
     lastMessageTimestamp = Date.now()

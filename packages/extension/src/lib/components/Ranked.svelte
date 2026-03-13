@@ -1,12 +1,36 @@
 <script lang='ts'>
+  import { api } from '$lib/api'
   import ranked from '$lib/assets/ranked.png'
-  import { user } from '$lib/stores/user.svelte'
+  import { user, userStore } from '$lib/stores/user.svelte'
   import { formatTime } from '$lib/utils'
   import Box from './Box.svelte'
   import { Button } from './ui/button'
 
   const { token } = $props()
   let loading = $state(false)
+  let mcUsername = $state('')
+  let linkError = $state<string | undefined>(undefined)
+  let linkLoading = $state(false)
+
+  interface LinkRankedSuccess {
+    outcome: 'success'
+    rankedInfo: {
+      mcUUID: string
+      mcUsername: string
+      pb: number | null
+      elo: number | null
+    }
+  }
+
+  interface LinkRankedFallback {
+    outcome: 'fallback'
+    message: string
+  }
+
+  const isLoading = $derived(userStore.fetchStatus === 'loading')
+  const hasLinkedAccount = $derived(user.rankedInfo !== null)
+  const showLinkForm = $derived(userStore.fetchStatus === 'loaded' && user.rankedInfo === null)
+  const rankedInfo = $derived(hasLinkedAccount ? user.rankedInfo : null)
 
   async function link() {
     browser.tabs.create({
@@ -17,14 +41,73 @@
 
   async function unlink() {
     loading = true
-    await fetch(`${import.meta.env.VITE_API_URL}/unlink/ranked`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    })
-    loading = false
-    user.rankedInfo = null
+    try {
+      await api.unlink({ account: 'ranked' }).post(null, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+      await userStore.setUnlinked(user.twLogin)
+      userStore.setFetchStatus('loaded')
+    }
+    finally {
+      loading = false
+    }
+  }
+
+  async function submitLink(event: SubmitEvent) {
+    event.preventDefault()
+    const trimmed = mcUsername.trim()
+    if (!trimmed) {
+      linkError = 'Enter your Minecraft username.'
+      return
+    }
+
+    linkLoading = true
+    linkError = undefined
+
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/user/link/ranked`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ mcUsername: trimmed }),
+      })
+
+      const data = await response.json().catch(() => null) as LinkRankedSuccess | LinkRankedFallback | null
+
+      if (!response.ok) {
+        linkError = 'Failed to link account. Redirecting to Microsoft login...'
+        link()
+        return
+      }
+
+      if (data?.outcome === 'success' && data.rankedInfo) {
+        await userStore.setUser({
+          twLogin: user.twLogin,
+          rankedInfo: data.rankedInfo,
+        })
+        userStore.setFetchStatus('loaded')
+        mcUsername = ''
+      }
+      else if (data?.outcome === 'fallback') {
+        linkError = data.message
+        link()
+      }
+      else {
+        linkError = 'Failed to link account. Redirecting to Microsoft login...'
+        link()
+      }
+    }
+    catch {
+      linkError = 'Failed to link account. Redirecting to Microsoft login...'
+      link()
+    }
+    finally {
+      linkLoading = false
+    }
   }
 </script>
 
@@ -43,25 +126,57 @@
 <Box
   img={ranked}
   alt='Ranked Logo'
-  secondary={user.rankedInfo ? unlinkButton : undefined}
+  secondary={hasLinkedAccount ? unlinkButton : undefined}
   --color='#86ce34'
 >
-  {#if user.rankedInfo !== null}
+  {#if hasLinkedAccount}
     <span class='flex flex-col items-end'>
-      <span>{user.rankedInfo.mcUsername}</span>
-      <span>
-        <span class='font-medium text-foreground/70 text-lg'>ELO:</span>
-        {user.rankedInfo.elo ?? 'N/A'}
+      <span class='flex items-center justify-end gap-2'>
+        {#if isLoading}
+          <div class='i-fluent:spinner-ios-16-filled size-5 animate-spin text-foreground/60'></div>
+        {/if}
+        <span>{rankedInfo!.mcUsername}</span>
       </span>
       <span>
-        <span class='font-medium text-foreground/70 text-lg'>PB:</span>
-        {user.rankedInfo.pb !== null ? formatTime(user.rankedInfo.pb) : 'N/A'}
+        <span class='text-lg text-foreground/70 font-medium'>ELO:</span>
+        {rankedInfo!.elo ?? 'N/A'}
+      </span>
+      <span>
+        <span class='text-lg text-foreground/70 font-medium'>PB:</span>
+        {rankedInfo!.pb !== null ? formatTime(rankedInfo!.pb) : 'N/A'}
       </span>
     </span>
+  {:else if isLoading}
+    <span class='flex items-center gap-2'>
+      <div class='i-fluent:spinner-ios-16-filled size-5 animate-spin'></div>
+      <span class='text-foreground/50'>Loading...</span>
+    </span>
+  {:else if showLinkForm}
+    <form class='flex items-center gap-2' onsubmit={submitLink}>
+      <input
+        class='h-8 w-full flex-1 border rounded-lg bg-background/80 px-3 py-2 text-sm font-[Ubuntu] focus:border-#86ce34 focus:shadow-none focus:outline-none focus:ring-none'
+        placeholder='Minecraft username'
+        bind:value={mcUsername}
+        aria-label='Minecraft username'
+        autocomplete='off'
+        disabled={linkLoading}
+      >
+      <Button
+        class='h-8 w-8 bg-#86ce34 p-0 text-background font-[Ubuntu] hover:bg-#86ce34/80'
+        type='submit'
+        disabled={linkLoading}
+      >
+        {#if linkLoading}
+          <div class='i-fluent:spinner-ios-16-filled size-4 animate-spin'></div>
+        {:else}
+          <div class='i-fluent:arrow-right-24-filled size-4'></div>
+        {/if}
+      </Button>
+    </form>
+    {#if linkError}
+      <p class='truncate text-xs text-orange'>{linkError}</p>
+    {/if}
   {:else}
-    <Button
-      class='bg-#86ce34 text-background hover:bg-#86ce34/80 font-[Ubuntu] h-8'
-      onclick={link}
-    >Link</Button>
+    <span class='text-foreground/50'>Unavailable</span>
   {/if}
 </Box>

@@ -1,5 +1,6 @@
 <script lang='ts'>
   import type { UserResponse } from '@api/types/user'
+  import { api } from '$lib/api'
   import rankedLogo from '$lib/assets/ranked.png'
   import twitchLogo from '$lib/assets/twitch.png'
   import { Button } from '$lib/components/ui/button'
@@ -10,6 +11,7 @@
   let lookupResult: UserResponse | null = $state(null)
   let lookupError: string | undefined = $state(undefined)
   let lookupLoading: boolean = $state(false)
+  let abortController: AbortController | null = null
 
   async function lookupUser(event: SubmitEvent) {
     event.preventDefault()
@@ -22,31 +24,41 @@
       return
     }
 
+    if (abortController)
+      abortController.abort()
+
+    abortController = new AbortController()
+
     lookupLoading = true
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/user/${trimmed}`)
-      if (res.ok)
-        lookupResult = await res.json()
-      else if (res.status === 404)
+      const { data, status } = await api.user({ tw: trimmed }).get({
+        fetch: { signal: abortController.signal },
+      })
+      if (data)
+        lookupResult = data
+      else if (status === 404)
         lookupError = `No data found for @${trimmed}.`
       else
         lookupError = 'Failed to fetch user data. Please try again later.'
     }
-    catch (error) {
-      console.error('Lookup failed', error)
-      lookupError = 'Something went wrong. Please check your connection and try again.'
+    catch (err) {
+      if (err instanceof Error && err.name !== 'AbortError') {
+        console.error('Lookup failed', err)
+        lookupError = 'Something went wrong. Please check your connection and try again.'
+      }
     }
     finally {
       lookupLoading = false
+      abortController = null
     }
   }
 </script>
 
 <Card.Root class='p-3'>
-  <Card.Content class='space-y-3 p-0'>
+  <Card.Content class='p-0 space-y-3'>
     <form class='flex items-center gap-2' onsubmit={lookupUser}>
       <input
-        class='flex-1 rounded-lg border border-foreground/15 bg-background/80 px-3 py-2 text-sm font-[Ubuntu] text-foreground placeholder:text-foreground/50 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/40'
+        class='flex-1 border border-foreground/15 rounded-lg bg-background/80 px-3 py-2 text-sm text-foreground font-[Ubuntu] focus:border-primary placeholder:text-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/40'
         placeholder='Check Twitch user'
         bind:value={lookupName}
         aria-label='Twitch username search input'
@@ -54,7 +66,7 @@
         name='lookup'
       >
       <Button
-        class='font-[Ubuntu] px-4'
+        class='px-4 font-[Ubuntu]'
         type='submit'
         disabled={lookupLoading}
       >
@@ -62,9 +74,9 @@
       </Button>
     </form>
     {#if lookupError}
-      <p class='rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive'>{lookupError}</p>
+      <p class='border border-destructive/40 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive'>{lookupError}</p>
     {:else if lookupResult}
-      <Card.Root class='py-3 text-sm bg-background'>
+      <Card.Root class='bg-background py-3 text-sm'>
         <Card.Content class='px-4'>
           <div class='space-y-3'>
             <div class='flex items-center justify-between gap-3'>
@@ -72,10 +84,10 @@
                 <div class='w-6'>
                   <img src={twitchLogo} alt='Twitch logo' class='h-6'>
                 </div>
-                <span class='font-medium uppercase tracking-wide text-xs text-foreground/60'>Twitch</span>
+                <span class='text-xs text-foreground/60 font-medium tracking-wide uppercase'>Twitch</span>
               </div>
               <a
-                class='font-semibold text-base leading-tight truncate'
+                class='truncate text-base font-semibold leading-tight'
                 href={`https://www.twitch.tv/${lookupResult.twLogin}`}
                 target='_blank'
               >{lookupResult.twLogin}</a>
@@ -84,7 +96,7 @@
             <div class='space-y-2'>
               <div class='flex items-center gap-3 text-foreground/70'>
                 <img src={rankedLogo} alt='Ranked logo' class='h-6'>
-                <span class='font-medium uppercase tracking-wide text-xs text-foreground/60'>Ranked</span>
+                <span class='text-xs text-foreground/60 font-medium tracking-wide uppercase'>Ranked</span>
               </div>
               {#if lookupResult.rankedInfo}
                 <div class='flex flex-row justify-between'>
