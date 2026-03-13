@@ -1,6 +1,7 @@
 <script lang='ts'>
   import { api } from '$lib/api'
   import ranked from '$lib/assets/ranked.png'
+  import { API_TIMEOUT_MS, fetchWithTimeout } from '$lib/fetch'
   import { user, userStore } from '$lib/stores/user.svelte'
   import { formatTime } from '$lib/utils'
   import Box from './Box.svelte'
@@ -25,6 +26,25 @@
   interface LinkRankedFallback {
     outcome: 'fallback'
     message: string
+  }
+
+  interface LinkRankedError {
+    message?: string
+  }
+
+  function getLinkErrorMessage(data: LinkRankedSuccess | LinkRankedFallback | LinkRankedError | null) {
+    if (data && 'message' in data && typeof data.message === 'string')
+      return data.message
+
+    return undefined
+  }
+
+  function isLinkRankedSuccess(data: LinkRankedSuccess | LinkRankedFallback | LinkRankedError | null): data is LinkRankedSuccess {
+    return !!data && 'outcome' in data && data.outcome === 'success'
+  }
+
+  function isLinkRankedFallback(data: LinkRankedSuccess | LinkRankedFallback | LinkRankedError | null): data is LinkRankedFallback {
+    return !!data && 'outcome' in data && data.outcome === 'fallback'
   }
 
   const isLoading = $derived(userStore.fetchStatus === 'loading')
@@ -67,24 +87,33 @@
     linkError = undefined
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/user/link/ranked`, {
+      const response = await fetchWithTimeout(`${import.meta.env.VITE_API_URL}/user/link/ranked`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({ mcUsername: trimmed }),
-      })
+      }, API_TIMEOUT_MS)
 
-      const data = await response.json().catch(() => null) as LinkRankedSuccess | LinkRankedFallback | null
+      const raw = await response.text()
+      let data: LinkRankedSuccess | LinkRankedFallback | LinkRankedError | null = null
+
+      if (raw) {
+        try {
+          data = JSON.parse(raw) as LinkRankedSuccess | LinkRankedFallback | LinkRankedError
+        }
+        catch {
+          data = { message: raw }
+        }
+      }
 
       if (!response.ok) {
-        linkError = 'Failed to link account. Redirecting to Microsoft login...'
-        link()
+        linkError = getLinkErrorMessage(data) ?? 'Failed to link account. Please try again.'
         return
       }
 
-      if (data?.outcome === 'success' && data.rankedInfo) {
+      if (isLinkRankedSuccess(data) && data.rankedInfo) {
         await userStore.setUser({
           twLogin: user.twLogin,
           rankedInfo: data.rankedInfo,
@@ -92,18 +121,22 @@
         userStore.setFetchStatus('loaded')
         mcUsername = ''
       }
-      else if (data?.outcome === 'fallback') {
+      else if (isLinkRankedFallback(data)) {
         linkError = data.message
         link()
       }
       else {
-        linkError = 'Failed to link account. Redirecting to Microsoft login...'
-        link()
+        linkError = 'Failed to link account. Please try again.'
       }
     }
-    catch {
-      linkError = 'Failed to link account. Redirecting to Microsoft login...'
-      link()
+    catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        linkError = 'Timed out while linking your account. Please try again.'
+      }
+      else {
+        console.error('Failed to link Ranked account', error)
+        linkError = 'Failed to link account. Please try again.'
+      }
     }
     finally {
       linkLoading = false

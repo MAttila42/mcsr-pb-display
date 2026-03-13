@@ -16,23 +16,18 @@ export function createThrottledQueue(intervalMs: number, { minDelayMs = interval
   if (intervalMs < 0)
     throw new Error('intervalMs must be non-negative')
 
-  let lastRun = 0
+  let lastStart = 0
   let chain: Promise<unknown> = Promise.resolve()
 
   const runNext = <T>(task: Task<T>): Promise<T> => {
     const execute = async () => {
       const now = Date.now()
-      const delay = Math.max(minDelayMs - (now - lastRun), 0)
+      const delay = Math.max(minDelayMs - (now - lastStart), 0)
       if (delay > 0)
         await new Promise<void>(resolve => setTimeout(resolve, delay))
 
-      try {
-        const result = await task()
-        return result
-      }
-      finally {
-        lastRun = Date.now()
-      }
+      lastStart = Date.now()
+      return await task()
     }
 
     const next = chain.then(execute, execute)

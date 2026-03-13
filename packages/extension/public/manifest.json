@@ -11,7 +11,9 @@
     "storage"
   ],
   "host_permissions": [
-    "*://*.twitch.tv/*"
+    "*://*.twitch.tv/*",
+    "http://localhost:3000/*",
+    "https://mcsr-pb-display.menyh.art/*"
   ],
   "browser_specific_settings": {
     "gecko": {
