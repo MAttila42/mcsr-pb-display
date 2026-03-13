@@ -1,13 +1,18 @@
 <script lang='ts'>
   import { api } from '$lib/api'
   import ranked from '$lib/assets/ranked.png'
-  import { user } from '$lib/stores/user.svelte'
+  import { user, userStore } from '$lib/stores/user.svelte'
   import { formatTime } from '$lib/utils'
   import Box from './Box.svelte'
   import { Button } from './ui/button'
 
   const { token } = $props()
   let loading = $state(false)
+
+  const isLoading = $derived(userStore.fetchStatus === 'loading')
+  const hasLinkedAccount = $derived(user.rankedInfo !== null)
+  const showLinkButton = $derived(userStore.fetchStatus === 'loaded' && user.rankedInfo === null)
+  const rankedInfo = $derived(hasLinkedAccount ? user.rankedInfo : null)
 
   async function link() {
     browser.tabs.create({
@@ -24,7 +29,8 @@
           Authorization: `Bearer ${token}`,
         },
       })
-      user.rankedInfo = null
+      await userStore.setUnlinked(user.twLogin)
+      userStore.setFetchStatus('loaded')
     }
     finally {
       loading = false
@@ -47,25 +53,37 @@
 <Box
   img={ranked}
   alt='Ranked Logo'
-  secondary={user.rankedInfo ? unlinkButton : undefined}
+  secondary={hasLinkedAccount ? unlinkButton : undefined}
   --color='#86ce34'
 >
-  {#if user.rankedInfo !== null}
+  {#if hasLinkedAccount}
     <span class='flex flex-col items-end'>
-      <span>{user.rankedInfo.mcUsername}</span>
-      <span>
-        <span class='font-medium text-foreground/70 text-lg'>ELO:</span>
-        {user.rankedInfo.elo ?? 'N/A'}
+      <span class='flex items-center justify-end gap-2'>
+        {#if isLoading}
+          <div class='i-fluent:spinner-ios-16-filled size-5 animate-spin text-foreground/60'></div>
+        {/if}
+        <span>{rankedInfo!.mcUsername}</span>
       </span>
       <span>
-        <span class='font-medium text-foreground/70 text-lg'>PB:</span>
-        {user.rankedInfo.pb !== null ? formatTime(user.rankedInfo.pb) : 'N/A'}
+        <span class='text-lg text-foreground/70 font-medium'>ELO:</span>
+        {rankedInfo!.elo ?? 'N/A'}
+      </span>
+      <span>
+        <span class='text-lg text-foreground/70 font-medium'>PB:</span>
+        {rankedInfo!.pb !== null ? formatTime(rankedInfo!.pb) : 'N/A'}
       </span>
     </span>
-  {:else}
+  {:else if isLoading}
+    <span class='flex items-center gap-2'>
+      <div class='i-fluent:spinner-ios-16-filled size-5 animate-spin'></div>
+      <span class='text-foreground/50'>Loading...</span>
+    </span>
+  {:else if showLinkButton}
     <Button
-      class='bg-#86ce34 text-background hover:bg-#86ce34/80 font-[Ubuntu] h-8'
+      class='h-8 bg-#86ce34 text-background font-[Ubuntu] hover:bg-#86ce34/80'
       onclick={link}
     >Link</Button>
+  {:else}
+    <span class='text-foreground/50'>Unavailable</span>
   {/if}
 </Box>

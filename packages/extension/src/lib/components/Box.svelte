@@ -20,7 +20,7 @@
   class={`w-full p-4 ${className}`}
   style='background-color: color-mix(in srgb, var(--color) 25%, transparent); border-color: var(--color);'
 >
-  <Card.Content class='w-full flex flex-row justify-between text-xl font-bold text-right p-0 gap-6'>
+  <Card.Content class='w-full flex flex-row justify-between gap-6 p-0 text-right text-xl font-bold'>
     <div class='flex flex-col justify-between gap-3'>
       <div class='size-8'>
         <img src={img} alt={alt} class='h-8'>
@@ -29,7 +29,7 @@
         {@render secondary?.()}
       {/if}
     </div>
-    <div class='flex flex-col justify-center font-["Ubuntu_Mono"] truncate min-h-8'>
+    <div class='min-h-8 flex flex-col justify-center truncate font-["Ubuntu_Mono"]'>
       {@render children?.()}
     </div>
   </Card.Content>
