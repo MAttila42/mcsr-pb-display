@@ -10,6 +10,7 @@
   let lookupResult: UserResponse | null = $state(null)
   let lookupError: string | undefined = $state(undefined)
   let lookupLoading: boolean = $state(false)
+  let abortController: AbortController | null = null
 
   async function lookupUser(event: SubmitEvent) {
     event.preventDefault()
@@ -22,9 +23,16 @@
       return
     }
 
+    if (abortController)
+      abortController.abort()
+
+    abortController = new AbortController()
+
     lookupLoading = true
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/user/${trimmed}`)
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/user/${trimmed}`, {
+        signal: abortController.signal,
+      })
       if (res.ok)
         lookupResult = await res.json()
       else if (res.status === 404)
@@ -33,11 +41,14 @@
         lookupError = 'Failed to fetch user data. Please try again later.'
     }
     catch (error) {
-      console.error('Lookup failed', error)
-      lookupError = 'Something went wrong. Please check your connection and try again.'
+      if (error instanceof Error && error.name !== 'AbortError') {
+        console.error('Lookup failed', error)
+        lookupError = 'Something went wrong. Please check your connection and try again.'
+      }
     }
     finally {
       lookupLoading = false
+      abortController = null
     }
   }
 </script>

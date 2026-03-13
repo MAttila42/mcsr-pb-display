@@ -17,14 +17,18 @@
 
   async function unlink() {
     loading = true
-    await fetch(`${import.meta.env.VITE_API_URL}/unlink/ranked`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    })
-    loading = false
-    user.rankedInfo = null
+    try {
+      await fetch(`${import.meta.env.VITE_API_URL}/unlink/ranked`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+      user.rankedInfo = null
+    }
+    finally {
+      loading = false
+    }
   }
 </script>
 

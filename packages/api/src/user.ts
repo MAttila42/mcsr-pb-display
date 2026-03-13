@@ -22,7 +22,7 @@ export const user = new Elysia({
     if (!user)
       return status(404, 'User not found.')
 
-    const ranked = user.mcUUID ? await rankedUser(user.mcUUID) : null
+    const ranked = user.mcUUID ? await rankedUser(user.mcUUID).catch(() => null) : null
 
     const payload: UserResponse = {
       twLogin: user.twLogin,

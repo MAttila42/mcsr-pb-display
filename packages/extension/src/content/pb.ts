@@ -132,6 +132,11 @@ async function flushPending() {
   }
   catch (err) {
     console.error('[mcsr-pb-display] failed to fetch PBs', err)
+    for (const name of uniqueNames) {
+      const resolvers = resolverMap.get(name)
+      resolvers?.forEach(resolve => resolve(undefined))
+      inFlight.delete(name)
+    }
   }
   finally {
     lastMessageTimestamp = Date.now()

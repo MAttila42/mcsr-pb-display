@@ -20,26 +20,46 @@
   let login: string | undefined = $state('')
   let isLoaded: boolean = $state(false)
 
-  onMount(async () => {
-    const raw = await browser.storage.local.get(['authToken', 'login'])
-    const result = raw as StoredState
-    token = result.authToken
-    login = result.login
-    isLoaded = true
+  onMount(() => {
+    let abortController: AbortController | null = null;
 
-    if (login) {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/user/${login}`)
-      if (res.ok) {
-        const userData = await res.json()
-        user.twLogin = userData.twLogin
-        user.rankedInfo = userData.rankedInfo
+    (async () => {
+      const raw = await browser.storage.local.get(['authToken', 'login'])
+      const result = raw as StoredState
+      token = result.authToken
+      login = result.login
+      isLoaded = true
+
+      if (login) {
+        abortController = new AbortController()
+        try {
+          const res = await fetch(`${import.meta.env.VITE_API_URL}/user/${login}`, {
+            signal: abortController.signal,
+          })
+          if (res.ok) {
+            const userData = await res.json()
+            user.twLogin = userData.twLogin
+            user.rankedInfo = userData.rankedInfo
+          }
+          else {
+            console.error('Failed to fetch user data')
+          }
+        }
+        catch (err) {
+          if (err instanceof Error && err.name !== 'AbortError')
+            console.error('Failed to fetch user data', err)
+        }
+        finally {
+          abortController = null
+        }
       }
-      else {
-        console.error('Failed to fetch user data')
-      }
+    })()
+
+    return () => {
+      if (abortController)
+        abortController.abort()
     }
   })
-
 </script>
 
 <main class='m-4 h-max w-xs flex flex-col gap-6 max-h-800'>
