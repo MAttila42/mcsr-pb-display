@@ -81,11 +81,24 @@ export const auth = createAuth({
 
     const minecraft = await minecraftProfile(mc.access_token)
     const twitch = await twitchValidate(sessionData.token)
+    const twLogin = typeof twitch.login === 'string'
+      ? twitch.login.toLowerCase()
+      : undefined
+
+    if (!twLogin) {
+      return {
+        handled: true,
+        response: new Response(
+          'Unexpected Twitch response.',
+          { status: 500 },
+        ),
+      }
+    }
 
     const [existing] = await db
       .select()
       .from(Users)
-      .where(eq(Users.twLogin, twitch.login))
+      .where(eq(Users.twLogin, twLogin))
     if (existing) {
       await db
         .update(Users)
@@ -93,11 +106,11 @@ export const auth = createAuth({
           mcUUID: minecraft.id,
           mcUsername: minecraft.name,
         })
-        .where(eq(Users.twLogin, twitch.login))
+        .where(eq(Users.twLogin, twLogin))
     }
     else {
       await db.insert(Users).values({
-        twLogin: twitch.login,
+        twLogin,
         mcUUID: minecraft.id,
         mcUsername: minecraft.name,
       })
@@ -107,7 +120,7 @@ export const auth = createAuth({
       handled: true,
       response: new Response(
         `Authentication done! You can close this tab now.</br>
-        Twitch: ${twitch.login}</br>
+        Twitch: ${twLogin}</br>
         Minecraft: ${minecraft.name}`,
         { status: 200, headers: { 'Content-Type': 'text/html' } },
       ),

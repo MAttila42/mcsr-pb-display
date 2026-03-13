@@ -1,4 +1,4 @@
-import { api } from '$lib/api'
+import { fetchBulkPbs } from './api'
 import { getSessionCache, setSessionCache } from './cache'
 
 const PB_TTL = 15 * 60 * 1000
@@ -29,16 +29,6 @@ export async function getPb(tw: string): Promise<number | undefined> {
   }
 
   return queueBulkFetch(twKey)
-}
-
-/**
- * Fetch multiple PBs in a single request.
- */
-export async function fetchBulkPbs(tws: string[]): Promise<Record<string, number | null>> {
-  const { data, error } = await api.user.pbs.post(tws.map(t => t.toLowerCase()))
-  if (error || !data)
-    throw new Error('Failed to fetch bulk PBs')
-  return data
 }
 
 export function formatTime(ms: number): string {

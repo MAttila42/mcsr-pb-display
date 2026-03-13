@@ -26,13 +26,14 @@
   const TIMEOUT_MS = 30000
 
   async function fetchUserData(twLogin: string) {
+    const normalizedLogin = twLogin.toLowerCase()
     abortController = new AbortController()
     const timeoutId = setTimeout(() => {
       abortController?.abort()
     }, TIMEOUT_MS)
 
     try {
-      const { data, status } = await api.user({ tw: twLogin }).get({
+      const { data, status } = await api.user({ tw: normalizedLogin }).get({
         fetch: { signal: abortController.signal },
       })
 
@@ -42,9 +43,9 @@
         apiError = undefined
       }
       else if (status === 404) {
-        await userStore.setUnlinked(twLogin)
-        userStore.setFetchStatus('loaded')
-        apiError = undefined
+        userStore.resetRuntime()
+        userStore.setFetchStatus('error')
+        apiError = `Could not find Twitch user @${normalizedLogin}.`
       }
       else {
         userStore.setFetchStatus('error')
@@ -73,7 +74,7 @@
       const raw = await browser.storage.local.get(['authToken', 'login'])
       const result = raw as StoredState
       token = result.authToken
-      login = result.login
+      login = result.login?.toLowerCase()
       isLoaded = true
       apiError = undefined
 

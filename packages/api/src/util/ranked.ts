@@ -29,6 +29,31 @@ export async function rankedUserByIdentifier(identifier: string): Promise<Ranked
   return runRankedRequest(() => rawRankedUserByIdentifier(identifier))
 }
 
+export async function rankedUserByTwitchLogin(twLogin: string): Promise<RankedUser | null> {
+  const normalized = twLogin.toLowerCase()
+
+  let ranked
+  try {
+    ranked = await rankedUserByIdentifier(normalized)
+  }
+  catch {
+    return null
+  }
+
+  if (!ranked)
+    return null
+
+  const twitchConnection = ranked.connections?.twitch
+  if (!twitchConnection?.id)
+    return null
+  if (twitchConnection.id.toLowerCase() !== normalized)
+    return null
+  if (!ranked.uuid || !ranked.nickname)
+    return null
+
+  return ranked
+}
+
 async function rawRankedUserByIdentifier(identifier: string): Promise<RankedUser | null> {
   const controller = new AbortController()
   const timeoutId = setTimeout(() => controller.abort(), 5000)

@@ -63,7 +63,7 @@ window.onload = async () => {
     toRemove.push('authToken')
 
   if (login)
-    toSet.login = login
+    toSet.login = login.toLowerCase()
   else
     toRemove.push('login')
 

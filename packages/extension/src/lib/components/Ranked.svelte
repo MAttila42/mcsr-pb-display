@@ -12,6 +12,21 @@
   let linkError = $state<string | undefined>(undefined)
   let linkLoading = $state(false)
 
+  interface LinkRankedSuccess {
+    outcome: 'success'
+    rankedInfo: {
+      mcUUID: string
+      mcUsername: string
+      pb: number | null
+      elo: number | null
+    }
+  }
+
+  interface LinkRankedFallback {
+    outcome: 'fallback'
+    message: string
+  }
+
   const isLoading = $derived(userStore.fetchStatus === 'loading')
   const hasLinkedAccount = $derived(user.rankedInfo !== null)
   const showLinkForm = $derived(userStore.fetchStatus === 'loaded' && user.rankedInfo === null)
@@ -52,10 +67,22 @@
     linkError = undefined
 
     try {
-      const { data } = await api.user.link.ranked.post(
-        { mcUsername: trimmed },
-        { headers: { Authorization: `Bearer ${token}` } },
-      )
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/user/link/ranked`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ mcUsername: trimmed }),
+      })
+
+      const data = await response.json().catch(() => null) as LinkRankedSuccess | LinkRankedFallback | null
+
+      if (!response.ok) {
+        linkError = 'Failed to link account. Redirecting to Microsoft login...'
+        link()
+        return
+      }
 
       if (data?.outcome === 'success' && data.rankedInfo) {
         await userStore.setUser({

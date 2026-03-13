@@ -52,10 +52,12 @@ export const userStore = {
       return null
     }
 
+    const normalizedLogin = login.toLowerCase()
+
     const raw = await browser.storage.local.get(CACHED_USER_KEY)
     const cached = raw[CACHED_USER_KEY] as UserResponse | undefined
 
-    if (cached && cached.twLogin === login) {
+    if (cached && cached.twLogin.toLowerCase() === normalizedLogin) {
       applyUser(cached)
       return cached
     }
@@ -65,13 +67,18 @@ export const userStore = {
   },
 
   async setUser(data: UserResponse): Promise<void> {
-    applyUser(data)
-    await browser.storage.local.set({ [CACHED_USER_KEY]: data })
+    const normalizedData: UserResponse = {
+      ...data,
+      twLogin: data.twLogin.toLowerCase(),
+    }
+
+    applyUser(normalizedData)
+    await browser.storage.local.set({ [CACHED_USER_KEY]: normalizedData })
   },
 
   async setUnlinked(twLogin: string): Promise<void> {
     const data: UserResponse = {
-      twLogin,
+      twLogin: twLogin.toLowerCase(),
       rankedInfo: null,
     }
 
