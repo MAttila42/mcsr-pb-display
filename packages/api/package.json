@@ -1,6 +1,5 @@
 {
   "name": "mcsr-pb-display-api",
-  "version": "0.1.0",
   "packageManager": "bun@1.3.10",
   "module": "src/index.js",
   "scripts": {

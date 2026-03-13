@@ -1,7 +1,6 @@
 {
   "name": "mcsr-pb-display",
   "type": "module",
-  "version": "0.0.1",
   "private": true,
   "packageManager": "bun@1.3.10",
   "scripts": {
