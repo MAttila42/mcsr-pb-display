@@ -1,4 +1,5 @@
 <script lang='ts'>
+  import { api } from '$lib/api'
   import KoFi from '$lib/components/KoFi.svelte'
   import Ranked from '$lib/components/Ranked.svelte'
   import Search from '$lib/components/Search.svelte'
@@ -33,16 +34,15 @@
       if (login) {
         abortController = new AbortController()
         try {
-          const res = await fetch(`${import.meta.env.VITE_API_URL}/user/${login}`, {
-            signal: abortController.signal,
+          const { data, error } = await api.user({ tw: login }).get({
+            fetch: { signal: abortController.signal },
           })
-          if (res.ok) {
-            const userData = await res.json()
-            user.twLogin = userData.twLogin
-            user.rankedInfo = userData.rankedInfo
+          if (data) {
+            user.twLogin = data.twLogin
+            user.rankedInfo = data.rankedInfo
           }
           else {
-            console.error('Failed to fetch user data')
+            console.error('Failed to fetch user data', error)
           }
         }
         catch (err) {

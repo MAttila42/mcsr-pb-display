@@ -1,5 +1,6 @@
 <script lang='ts'>
   import type { UserResponse } from '@api/types/user'
+  import { api } from '$lib/api'
   import rankedLogo from '$lib/assets/ranked.png'
   import twitchLogo from '$lib/assets/twitch.png'
   import { Button } from '$lib/components/ui/button'
@@ -30,19 +31,19 @@
 
     lookupLoading = true
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/user/${trimmed}`, {
-        signal: abortController.signal,
+      const { data, status } = await api.user({ tw: trimmed }).get({
+        fetch: { signal: abortController.signal },
       })
-      if (res.ok)
-        lookupResult = await res.json()
-      else if (res.status === 404)
+      if (data)
+        lookupResult = data
+      else if (status === 404)
         lookupError = `No data found for @${trimmed}.`
       else
         lookupError = 'Failed to fetch user data. Please try again later.'
     }
-    catch (error) {
-      if (error instanceof Error && error.name !== 'AbortError') {
-        console.error('Lookup failed', error)
+    catch (err) {
+      if (err instanceof Error && err.name !== 'AbortError') {
+        console.error('Lookup failed', err)
         lookupError = 'Something went wrong. Please check your connection and try again.'
       }
     }

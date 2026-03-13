@@ -1,6 +1,5 @@
+import { api } from '$lib/api'
 import { getSessionCache, setSessionCache } from './cache'
-
-const API_URL = import.meta.env.VITE_API_URL
 
 const PB_TTL = 15 * 60 * 1000
 const BATCH_WINDOW_MS = 1000
@@ -36,15 +35,10 @@ export async function getPb(tw: string): Promise<number | undefined> {
  * Fetch multiple PBs in a single request.
  */
 export async function fetchBulkPbs(tws: string[]): Promise<Record<string, number | null>> {
-  const res = await fetch(`${API_URL}/user/pbs`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(tws.map(t => t.toLowerCase())),
-  })
-  if (!res.ok)
+  const { data, error } = await api.user.pbs.post(tws.map(t => t.toLowerCase()))
+  if (error || !data)
     throw new Error('Failed to fetch bulk PBs')
-  const json = await res.json() as Record<string, number | null>
-  return json
+  return data
 }
 
 export function formatTime(ms: number): string {

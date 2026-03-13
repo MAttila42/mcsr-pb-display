@@ -1,4 +1,5 @@
 <script lang='ts'>
+  import { api } from '$lib/api'
   import ranked from '$lib/assets/ranked.png'
   import { user } from '$lib/stores/user.svelte'
   import { formatTime } from '$lib/utils'
@@ -18,8 +19,7 @@
   async function unlink() {
     loading = true
     try {
-      await fetch(`${import.meta.env.VITE_API_URL}/unlink/ranked`, {
-        method: 'POST',
+      await api.unlink({ account: 'ranked' }).post(null, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
