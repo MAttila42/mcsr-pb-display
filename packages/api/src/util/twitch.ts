@@ -1,16 +1,34 @@
 const TW_VALIDATE = 'https://id.twitch.tv/oauth2/validate'
 const TW_VALIDATE_TIMEOUT_MS = 5000
 
-export async function twitchValidate(twAccess: string) {
+function createTimeoutSignal(timeoutMs: number, signal?: AbortSignal) {
   const controller = new AbortController()
-  const timeoutId = setTimeout(() => controller.abort(), TW_VALIDATE_TIMEOUT_MS)
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
+  const abort = () => controller.abort()
+
+  if (signal?.aborted)
+    controller.abort()
+  else
+    signal?.addEventListener('abort', abort, { once: true })
+
+  return {
+    signal: controller.signal,
+    cleanup() {
+      clearTimeout(timeoutId)
+      signal?.removeEventListener('abort', abort)
+    },
+  }
+}
+
+export async function twitchValidate(twAccess: string, signal?: AbortSignal) {
+  const request = createTimeoutSignal(TW_VALIDATE_TIMEOUT_MS, signal)
 
   try {
     const res = await fetch(TW_VALIDATE, {
       headers: {
         Authorization: `OAuth ${twAccess}`,
       },
-      signal: controller.signal,
+      signal: request.signal,
     })
     if (!res.ok)
       throw new Error('Twitch validate failed')
@@ -24,6 +42,6 @@ export async function twitchValidate(twAccess: string) {
     throw err
   }
   finally {
-    clearTimeout(timeoutId)
+    request.cleanup()
   }
 }

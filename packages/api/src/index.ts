@@ -1,39 +1,45 @@
-import type { Env } from 'bun'
-import type { Context } from 'elysia'
-
 import { randomBytes } from 'node:crypto'
 import process from 'node:process'
 import { cors } from '@elysiajs/cors'
 import { createHandler } from '@rttnd/gau/core'
 import { eq } from 'drizzle-orm'
-import { Elysia, file } from 'elysia'
+import { Elysia } from 'elysia'
+import { CloudflareAdapter } from 'elysia/adapter/cloudflare-worker'
 
 import { auth } from './auth'
 import { db } from './db'
 import { Users } from './db/schema'
 import link from './link.html' with { type: 'text' }
+import { RankedThrottle } from './ranked-throttle'
 import { clearCache } from './store/cache'
 import { setSession } from './store/session'
 import { user } from './user'
 import { twitchValidate } from './util'
+import { setWorkerEnv } from './worker-env'
 
 const handler = createHandler(auth)
+const MICROSOFT_IDENTITY_ASSOCIATION = JSON.stringify({
+  associatedApplications: [
+    {
+      applicationId: process.env.MICROSOFT_CLIENT_ID,
+    },
+  ],
+})
 
 const app = new Elysia({
   strictPath: false,
-  aot: false,
+  adapter: CloudflareAdapter,
 })
   .mount(handler)
   .use(cors())
   .use(user)
-  .get(
-    '/.well-known/microsoft-identity-association.json',
-    file('./public/.well-known/microsoft-identity-association.json'),
-  )
+  .get('/.well-known/microsoft-identity-association.json', () => new Response(MICROSOFT_IDENTITY_ASSOCIATION, {
+    headers: { 'Content-Type': 'application/json' },
+  }))
   .get('/link', () => new Response(link.toString(), {
     headers: { 'Content-Type': 'text/html' },
   }))
-  .post('/session', ({ headers, cookie, status }) => {
+  .post('/session', ({ headers, cookie, status }: any) => {
     const authHeader = headers.authorization
     if (!authHeader || !authHeader.startsWith('Bearer '))
       return status(401, 'Missing or invalid Authorization header.')
@@ -56,7 +62,7 @@ const app = new Elysia({
 
     return status(201)
   })
-  .post('/unlink/:account', async ({ params, headers, status }) => {
+  .post('/unlink/:account', async ({ params, headers, request, status }: any) => {
     const account = params.account?.toLowerCase()
     if (account !== 'ranked')
       return status(400, 'Unsupported account type.')
@@ -69,9 +75,9 @@ const app = new Elysia({
     if (!token)
       return status(401, 'Missing or invalid Authorization header.')
 
-    let twitch: any
+    let twitch: { login?: string }
     try {
-      twitch = await twitchValidate(token)
+      twitch = await twitchValidate(token, request.signal)
     }
     catch {
       return status(401, 'Invalid Twitch token.')
@@ -95,16 +101,15 @@ const app = new Elysia({
 
     return status(204)
   })
-  .get('/', 'This is the backend API for the MCSR PB Display extension. No content here.')
+  .get('/', () => 'This is the backend API for the MCSR PB Display extension. No content here.')
+  .compile()
 
 export type App = typeof app
+export { RankedThrottle }
 
 export default {
-  async fetch(
-    request: Request,
-    _env: Env,
-    _ctx: Context,
-  ): Promise<Response> {
+  async fetch(request: Request, env: CloudflareEnv): Promise<Response> {
+    setWorkerEnv(env)
     return await app.fetch(request)
   },
 }

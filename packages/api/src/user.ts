@@ -95,16 +95,15 @@ function createRequestLogger(route: string, details: Record<string, unknown> = {
 }
 
 export const user = new Elysia({
-  aot: false,
   prefix: '/user',
 })
-  .get('/:tw', async ({ params, status }) => {
+  .get('/:tw', async ({ params, request, status }: any) => {
     const tw = params.tw.toLowerCase()
 
     const dbUser = await findUserByTwitchLogin(tw)
 
     if (dbUser?.mcUUID) {
-      const ranked = await rankedUser(dbUser.mcUUID).catch(() => null)
+      const ranked = await rankedUser(dbUser.mcUUID, request.signal).catch(() => null)
 
       const payload: UserResponse = {
         twLogin: dbUser.twLogin,
@@ -125,7 +124,7 @@ export const user = new Elysia({
       }
     }
 
-    const ranked = await rankedUserByTwitchLogin(tw).catch(() => null)
+    const ranked = await rankedUserByTwitchLogin(tw, request.signal).catch(() => null)
 
     if (!ranked)
       return status(404, 'User not found.')
@@ -143,7 +142,7 @@ export const user = new Elysia({
     }
   })
 
-  .post('/pbs', async ({ body, status }) => {
+  .post('/pbs', async ({ body, request, status }: any) => {
     const logger = createRequestLogger('/user/pbs', {
       bodyType: typeof body,
     })
@@ -199,7 +198,7 @@ export const user = new Elysia({
       const refreshCache = (tw: string, uuid: string) => {
         void (async () => {
           try {
-            const ranked = await rankedUser(uuid)
+            const ranked = await rankedUser(uuid, request.signal)
             const pb = ranked?.statistics.total.bestTime.ranked
             if (typeof pb === 'number')
               setCache(cacheKeyFor(tw), pb)
@@ -240,7 +239,7 @@ export const user = new Elysia({
         }
 
         if (!user) {
-          const ranked = await rankedUserByTwitchLogin(tw).catch((error) => {
+          const ranked = await rankedUserByTwitchLogin(tw, request.signal).catch((error) => {
             logger.error('ranked_lookup_failed', error, { tw })
             return null
           })
@@ -292,7 +291,7 @@ export const user = new Elysia({
 
       await Promise.all(toFetch.map(async ({ tw, uuid }) => {
         try {
-          const ranked = await rankedUser(uuid)
+          const ranked = await rankedUser(uuid, request.signal)
           if (!ranked) {
             results[tw] = null
             return
@@ -331,7 +330,7 @@ export const user = new Elysia({
     }
   })
 
-  .post('/link/ranked', async ({ headers, body, status }) => {
+  .post('/link/ranked', async ({ headers, body, request, status }: any) => {
     const logger = createRequestLogger('/user/link/ranked')
     logger.log('start')
 
@@ -349,7 +348,7 @@ export const user = new Elysia({
 
     let twitch: { login: string }
     try {
-      twitch = await twitchValidate(token)
+      twitch = await twitchValidate(token, request.signal)
     }
     catch (error) {
       logger.error('twitch_validate_failed', error)
@@ -382,7 +381,7 @@ export const user = new Elysia({
 
     let ranked
     try {
-      ranked = await rankedUserByIdentifier(mcUsername)
+      ranked = await rankedUserByIdentifier(mcUsername, request.signal)
     }
     catch (error) {
       logger.error('ranked_lookup_failed', error, {
