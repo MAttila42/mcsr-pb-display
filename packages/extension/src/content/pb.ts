@@ -101,7 +101,7 @@ async function flushPending() {
   }
 
   const queued = pendingNames.splice(0, pendingNames.length)
-  const uniqueNames = Array.from(new Set(queued))
+  const uniqueNames = [...new Set(queued)]
   if (uniqueNames.length === 0)
     return
 
