@@ -1,4 +1,5 @@
 <script lang='ts'>
+  import type { UserResponse } from '@api/types/user'
   import { api } from '$lib/api'
   import KoFi from '$lib/components/KoFi.svelte'
   import Ranked from '$lib/components/Ranked.svelte'
@@ -37,8 +38,10 @@
         fetch: { signal: abortController.signal },
       })
 
-      if (data) {
-        await userStore.setUser(data)
+      const userData = data as UserResponse | null
+
+      if (userData) {
+        await userStore.setUser(userData)
         userStore.setFetchStatus('loaded')
         apiError = undefined
       }

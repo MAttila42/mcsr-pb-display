@@ -34,8 +34,10 @@
       const { data, status } = await api.user({ tw: trimmed }).get({
         fetch: { signal: abortController.signal },
       })
-      if (data)
-        lookupResult = data
+      const userData = data as UserResponse | null
+
+      if (userData)
+        lookupResult = userData
       else if (status === 404)
         lookupError = `No data found for @${trimmed}.`
       else

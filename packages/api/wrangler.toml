@@ -1,7 +1,19 @@
 name = "mcsr-pb-display"
 main = "./src/index.ts"
-compatibility_date = "2025-09-09"
-compatibility_flags = [ "nodejs_compat" ]
+compatibility_date = "2026-03-14"
+compatibility_flags = [
+  "nodejs_compat",
+  "enable_request_signal",
+  "request_signal_passthrough"
+]
+
+[[durable_objects.bindings]]
+name = "RANKED_THROTTLE"
+class_name = "RankedThrottle"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = [ "RankedThrottle" ]
 
 [observability]
 enabled = true
