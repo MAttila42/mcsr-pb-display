@@ -406,13 +406,11 @@ export const user = new Elysia({
           mcUsername,
         })
       }
-      useFallback()
+      return useFallback()
     }
 
-    if (!ranked) {
-      useFallback()
-      return
-    }
+    if (!ranked)
+      return useFallback()
 
     const twitchConnection = ranked.connections?.twitch
     if (!twitchConnection?.id) {
