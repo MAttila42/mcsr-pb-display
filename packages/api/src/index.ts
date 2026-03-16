@@ -12,6 +12,7 @@ import { Users } from './db/schema'
 import link from './link.html' with { type: 'text' }
 import { RankedThrottle } from './ranked-throttle'
 import { clearCache } from './store/cache'
+import { clearRankedCache } from './store/ranked-cache'
 import { setSession } from './store/session'
 import { user } from './user'
 import { twitchValidate } from './util'
@@ -98,6 +99,7 @@ const app = new Elysia({
       .where(eq(Users.twLogin, twitchLogin))
 
     clearCache(`pb:${twitchLogin}`)
+    await clearRankedCache(twitchLogin)
 
     return status(204)
   })
