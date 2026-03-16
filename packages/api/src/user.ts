@@ -379,22 +379,7 @@ export const user = new Elysia({
       mcUsername,
     })
 
-    let ranked
-    try {
-      ranked = await rankedUserByIdentifier(mcUsername, request.signal)
-    }
-    catch (error) {
-      logger.error('ranked_lookup_failed', error, {
-        twLogin,
-        mcUsername,
-      })
-      if (error instanceof Error && error.message === 'Ranked user fetch timed out')
-        return status(504, 'Timed out while fetching Ranked account.')
-
-      return status(502, 'Failed to fetch Ranked account.')
-    }
-
-    if (!ranked) {
+    const useFallback = () => {
       logger.log('ranked_not_found', {
         twLogin,
         mcUsername,
@@ -405,6 +390,27 @@ export const user = new Elysia({
         message: 'Could not find a Ranked account with that Minecraft username.',
       }
     }
+
+    let ranked
+    try {
+      ranked = await rankedUserByIdentifier(mcUsername, request.signal)
+    }
+    catch (error) {
+      logger.error('ranked_lookup_failed', error, {
+        twLogin,
+        mcUsername,
+      })
+      if (error instanceof Error && error.message === 'Ranked user fetch timed out') {
+        logger.error('ranked_lookup_timeout', {
+          twLogin,
+          mcUsername,
+        })
+      }
+      return useFallback()
+    }
+
+    if (!ranked)
+      return useFallback()
 
     const twitchConnection = ranked.connections?.twitch
     if (!twitchConnection?.id) {
