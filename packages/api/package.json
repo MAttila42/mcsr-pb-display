@@ -6,6 +6,7 @@
     "dev": "bun --bun run --watch src/index.ts",
     "preview": "wrangler dev --local src/index.ts --port 3000",
     "db": "drizzle-kit",
+    "scan": "bun --bun run scripts/scan.ts",
     "r:db": "NODE_ENV=production drizzle-kit",
     "deploy": "wrangler deploy --minify src/index.ts"
   },

@@ -68,7 +68,11 @@ async function waitForRankedSlot(request: RankedThrottleRequest) {
 
 function createTimeoutSignal(timeoutMs: number, signal?: AbortSignal) {
   const controller = new AbortController()
-  const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
+  let timedOut = false
+  const timeoutId = setTimeout(() => {
+    timedOut = true
+    controller.abort('timeout')
+  }, timeoutMs)
   const abort = () => controller.abort()
 
   if (signal?.aborted)
@@ -78,6 +82,9 @@ function createTimeoutSignal(timeoutMs: number, signal?: AbortSignal) {
 
   return {
     signal: controller.signal,
+    timedOut() {
+      return timedOut
+    },
     cleanup() {
       clearTimeout(timeoutId)
       signal?.removeEventListener('abort', abort)
@@ -100,7 +107,7 @@ async function rawRankedUserByIdentifier(identifier: string, signal?: AbortSigna
     return json.data as RankedUser
   }
   catch (err) {
-    if (err instanceof Error && err.name === 'AbortError')
+    if (err instanceof Error && err.name === 'AbortError' && request.timedOut())
       throw new Error('Ranked user fetch timed out')
 
     throw err
@@ -125,7 +132,7 @@ async function rawRankedUser(uuid: string, signal?: AbortSignal) {
     return json.data
   }
   catch (err) {
-    if (err instanceof Error && err.name === 'AbortError')
+    if (err instanceof Error && err.name === 'AbortError' && request.timedOut())
       throw new Error('Ranked user fetch timed out')
 
     throw err

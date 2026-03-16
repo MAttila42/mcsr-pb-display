@@ -12,6 +12,7 @@ node_modules
 /test-results
 /playwright-report
 /.nyc_output
+scan-*.json
 
 # OS
 .DS_Store

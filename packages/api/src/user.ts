@@ -1,14 +1,52 @@
 import type { UserResponse } from './types/user'
+import { waitUntil } from 'cloudflare:workers'
 import { eq, inArray, sql } from 'drizzle-orm'
 import { Elysia, t } from 'elysia'
+
 import { db } from './db'
 import { Users } from './db/schema'
 import {
-  clearCache,
-  getCache,
-  setCache,
-} from './store/cache'
+  getRankedCache,
+  getRankedCaches,
+  setRankedCache,
+} from './store/ranked-cache'
 import { rankedUser, rankedUserByIdentifier, rankedUserByTwitchLogin, twitchValidate } from './util'
+
+interface RankedSnapshot {
+  mcUUID: string
+  mcUsername: string
+  pb: number | null
+  elo: number | null
+}
+
+interface UrgentFetchOptions {
+  allowStaleOnError?: boolean
+  logger?: ReturnType<typeof createRequestLogger>
+  source?: string
+}
+
+function createRankedSnapshot(twLogin: string, ranked: Awaited<ReturnType<typeof rankedUser>>) {
+  if (!ranked)
+    return null
+
+  return {
+    twLogin,
+    mcUUID: ranked.uuid,
+    mcUsername: ranked.nickname,
+    pb: ranked.statistics?.total?.bestTime?.ranked ?? null,
+    elo: ranked.eloRate ?? null,
+    fetchedAt: Date.now(),
+  } satisfies RankedCacheSnapshot
+}
+
+function createRankedInfo(snapshot: RankedSnapshot): NonNullable<UserResponse['rankedInfo']> {
+  return {
+    mcUUID: snapshot.mcUUID,
+    mcUsername: snapshot.mcUsername,
+    pb: snapshot.pb,
+    elo: snapshot.elo,
+  }
+}
 
 async function upsertUser(twLogin: string, mcUUID: string, mcUsername: string) {
   await db
@@ -94,51 +132,255 @@ function createRequestLogger(route: string, details: Record<string, unknown> = {
   }
 }
 
+function runInBackground(task: Promise<unknown>) {
+  try {
+    waitUntil(task)
+  }
+  catch {
+    void task.catch(() => {})
+  }
+}
+
+async function fetchRankedSnapshotByUuid(
+  twLogin: string,
+  mcUUID: string,
+  signal?: AbortSignal,
+): Promise<RankedCacheSnapshot | null> {
+  const ranked = await rankedUser(mcUUID, signal)
+  return createRankedSnapshot(twLogin, ranked)
+}
+
+async function fetchRankedSnapshotByTwitchLogin(
+  twLogin: string,
+  signal?: AbortSignal,
+): Promise<RankedCacheSnapshot | null> {
+  const ranked = await rankedUserByTwitchLogin(twLogin, signal)
+  return createRankedSnapshot(twLogin, ranked)
+}
+
+async function refreshLinkedUserSnapshot(
+  twLogin: string,
+  mcUUID: string,
+  logger?: ReturnType<typeof createRequestLogger>,
+) {
+  try {
+    const snapshot = await fetchRankedSnapshotByUuid(twLogin, mcUUID)
+    if (!snapshot)
+      return
+
+    await setRankedCache(snapshot)
+    await upsertUser(snapshot.twLogin, snapshot.mcUUID, snapshot.mcUsername)
+    logger?.log('background_refresh_success', {
+      twLogin,
+      mcUUID,
+    })
+  }
+  catch (error) {
+    logger?.error('background_refresh_failed', error, {
+      twLogin,
+      mcUUID,
+    })
+  }
+}
+
+async function resolveUrgentLinkedSnapshot(
+  twLogin: string,
+  mcUUID: string,
+  stale: RankedCacheSnapshot | undefined,
+  signal?: AbortSignal,
+  options: UrgentFetchOptions = {},
+): Promise<RankedCacheSnapshot | null> {
+  const logger = options.logger
+  const source = options.source ?? 'linked_uuid'
+
+  logger?.log('urgent_refresh_started', {
+    twLogin,
+    source,
+    hasStale: Boolean(stale),
+  })
+
+  try {
+    const snapshot = await fetchRankedSnapshotByUuid(twLogin, mcUUID, signal)
+    if (!snapshot) {
+      logger?.log('urgent_refresh_empty', {
+        twLogin,
+        source,
+      })
+      return stale ?? null
+    }
+
+    await setRankedCache(snapshot)
+    await upsertUser(snapshot.twLogin, snapshot.mcUUID, snapshot.mcUsername)
+    logger?.log('urgent_refresh_success', {
+      twLogin,
+      source,
+    })
+    return snapshot
+  }
+  catch (error) {
+    logger?.error('urgent_refresh_failed', error, {
+      twLogin,
+      source,
+      allowStaleOnError: options.allowStaleOnError ?? false,
+    })
+
+    if (options.allowStaleOnError && stale)
+      return stale
+
+    throw error
+  }
+}
+
+async function resolveUrgentUnknownUserSnapshot(
+  twLogin: string,
+  signal?: AbortSignal,
+  logger?: ReturnType<typeof createRequestLogger>,
+): Promise<RankedCacheSnapshot | null> {
+  logger?.log('urgent_lookup_started', { twLogin })
+
+  const snapshot = await fetchRankedSnapshotByTwitchLogin(twLogin, signal)
+  if (!snapshot) {
+    logger?.log('urgent_lookup_not_found', { twLogin })
+    return null
+  }
+
+  await upsertUser(snapshot.twLogin, snapshot.mcUUID, snapshot.mcUsername)
+  await setRankedCache(snapshot)
+  logger?.log('urgent_lookup_success', {
+    twLogin,
+    mcUUID: snapshot.mcUUID,
+  })
+  return snapshot
+}
+
 export const user = new Elysia({
   prefix: '/user',
 })
   .get('/:tw', async ({ params, request, status }: any) => {
     const tw = params.tw.toLowerCase()
+    const logger = createRequestLogger('/user/:tw', { tw })
+    logger.log('start')
 
-    const dbUser = await findUserByTwitchLogin(tw)
+    const [dbUser, cached] = await Promise.all([
+      findUserByTwitchLogin(tw),
+      getRankedCache(tw),
+    ])
+
+    logger.log('lookup_complete', {
+      dbUserFound: Boolean(dbUser),
+      hasUuid: Boolean(dbUser?.mcUUID),
+      cacheState: cached ? (cached.stale ? 'stale' : 'fresh') : 'miss',
+    })
 
     if (dbUser?.mcUUID) {
-      const ranked = await rankedUser(dbUser.mcUUID, request.signal).catch(() => null)
-
-      const payload: UserResponse = {
-        twLogin: dbUser.twLogin,
-        rankedInfo: {
-          mcUUID: dbUser.mcUUID,
-          mcUsername: dbUser.mcUsername!,
-          pb: ranked ? ranked.statistics.total.bestTime.ranked : null,
-          elo: ranked ? ranked.eloRate : null,
-        },
+      if (cached && !cached.stale && cached.snapshot.mcUUID === dbUser.mcUUID) {
+        logger.log('cache_hit_fresh', { tw })
+        return {
+          twLogin: dbUser.twLogin,
+          rankedInfo: createRankedInfo(cached.snapshot),
+        }
       }
-      return payload
+
+      const stale = cached?.snapshot.mcUUID === dbUser.mcUUID
+        ? cached.snapshot
+        : undefined
+
+      try {
+        const snapshot = await resolveUrgentLinkedSnapshot(
+          dbUser.twLogin,
+          dbUser.mcUUID,
+          stale,
+          request.signal,
+          {
+            allowStaleOnError: true,
+            logger,
+            source: cached?.stale ? 'stale_cache' : 'cache_miss',
+          },
+        )
+
+        if (!snapshot) {
+          return {
+            twLogin: dbUser.twLogin,
+            rankedInfo: {
+              mcUUID: dbUser.mcUUID,
+              mcUsername: dbUser.mcUsername!,
+              pb: null,
+              elo: null,
+            },
+          }
+        }
+
+        return {
+          twLogin: dbUser.twLogin,
+          rankedInfo: createRankedInfo(snapshot),
+        }
+      }
+      catch {
+        if (stale) {
+          logger.log('serving_stale_after_error', { tw })
+          return {
+            twLogin: dbUser.twLogin,
+            rankedInfo: createRankedInfo(stale),
+          }
+        }
+
+        return {
+          twLogin: dbUser.twLogin,
+          rankedInfo: {
+            mcUUID: dbUser.mcUUID,
+            mcUsername: dbUser.mcUsername!,
+            pb: null,
+            elo: null,
+          },
+        }
+      }
     }
 
     if (dbUser && !dbUser.mcUUID) {
+      logger.log('db_user_without_ranked', { tw })
       return {
         twLogin: dbUser.twLogin,
         rankedInfo: null,
       }
     }
 
-    const ranked = await rankedUserByTwitchLogin(tw, request.signal).catch(() => null)
+    if (cached && !cached.stale) {
+      logger.log('cache_hit_unknown_user', { tw })
+      return {
+        twLogin: cached.snapshot.twLogin,
+        rankedInfo: createRankedInfo(cached.snapshot),
+      }
+    }
 
-    if (!ranked)
-      return status(404, 'User not found.')
+    try {
+      const snapshot = await resolveUrgentUnknownUserSnapshot(tw, request.signal, logger)
+      if (!snapshot) {
+        if (cached?.snapshot) {
+          logger.log('serving_stale_unknown_user', { tw })
+          return {
+            twLogin: cached.snapshot.twLogin,
+            rankedInfo: createRankedInfo(cached.snapshot),
+          }
+        }
 
-    await upsertUser(tw, ranked.uuid, ranked.nickname)
+        return status(404, 'User not found.')
+      }
 
-    return {
-      twLogin: tw,
-      rankedInfo: {
-        mcUUID: ranked.uuid,
-        mcUsername: ranked.nickname,
-        pb: ranked.statistics?.total?.bestTime?.ranked ?? null,
-        elo: ranked.eloRate ?? null,
-      },
+      return {
+        twLogin: snapshot.twLogin,
+        rankedInfo: createRankedInfo(snapshot),
+      }
+    }
+    catch (error) {
+      logger.error('urgent_lookup_failed', error, { tw })
+      if (cached?.snapshot) {
+        return {
+          twLogin: cached.snapshot.twLogin,
+          rankedInfo: createRankedInfo(cached.snapshot),
+        }
+      }
+
+      return status(502, 'Failed to refresh Ranked data.')
     }
   })
 
@@ -165,69 +407,52 @@ export const user = new Elysia({
     }
 
     try {
-      logger.log('payload_parsed', {
-        requestedCount: twList.length,
-      })
-
+      const requestedCount = twList.length
       const users = await db
         .select()
         .from(Users)
         .where(inArray(Users.twLogin, twList))
-      logger.log('db_users_loaded', {
-        requestedCount: twList.length,
-        dbUsers: users.length,
-      })
 
-      const byTw = new Map(users.map(u => [u.twLogin.toLowerCase(), u]))
-
-      const cacheKeyFor = (tw: string) => `pb:${tw}`
+      const byTw = new Map(users.map(user => [user.twLogin.toLowerCase(), user]))
+      const cachedByTw = await getRankedCaches(twList)
       const results: Record<string, number | null> = Object.create(null)
+
       let freshCacheHits = 0
       let staleCacheHits = 0
+      let urgentFetches = 0
+      let backgroundRefreshes = 0
       let dbLookups = 0
       let rankedFallbackLookups = 0
       let unmatchedUsers = 0
       let usersWithoutUuid = 0
 
-      const set = (tw: string, value: number | null | undefined) => {
-        if (value != null)
-          setCache(cacheKeyFor(tw), value)
-        results[tw] = value ?? null
-      }
-
-      const refreshCache = (tw: string, uuid: string) => {
-        void (async () => {
-          try {
-            const ranked = await rankedUser(uuid, request.signal)
-            const pb = ranked?.statistics.total.bestTime.ranked
-            if (typeof pb === 'number')
-              setCache(cacheKeyFor(tw), pb)
-          }
-          catch (error) {
-            logger.error('refresh_cache_failed', error, {
-              tw,
-              uuid,
-            })
-          }
-        })()
-      }
-
-      const toFetch: { tw: string, uuid: string }[] = []
       for (const tw of twList) {
-        const cached = getCache<number>(cacheKeyFor(tw))
         let user = byTw.get(tw)
+        const cached = cachedByTw.get(tw)
 
         if (cached && !cached.stale) {
           freshCacheHits += 1
-          results[tw] = cached.value
+          results[tw] = cached.snapshot.pb
           continue
         }
 
-        if (cached && cached.stale) {
+        if (cached?.stale) {
           staleCacheHits += 1
-          results[tw] = cached.value
-          if (user?.mcUUID)
-            refreshCache(tw, user.mcUUID)
+          results[tw] = cached.snapshot.pb
+
+          if (!user) {
+            dbLookups += 1
+            user = await findUserByTwitchLogin(tw)
+            if (user)
+              byTw.set(tw, user)
+          }
+
+          const refreshUuid = user?.mcUUID ?? cached.snapshot.mcUUID
+          if (refreshUuid) {
+            backgroundRefreshes += 1
+            runInBackground(refreshLinkedUserSnapshot(tw, refreshUuid, logger))
+          }
+
           continue
         }
 
@@ -239,29 +464,16 @@ export const user = new Elysia({
         }
 
         if (!user) {
-          const ranked = await rankedUserByTwitchLogin(tw, request.signal).catch((error) => {
-            logger.error('ranked_lookup_failed', error, { tw })
-            return null
-          })
-
-          if (ranked) {
-            rankedFallbackLookups += 1
-
-            try {
-              await upsertUser(tw, ranked.uuid, ranked.nickname)
-            }
-            catch (error) {
-              logger.error('upsert_from_ranked_failed', error, {
-                tw,
-                mcUUID: ranked.uuid,
-              })
-              results[tw] = null
+          try {
+            const snapshot = await resolveUrgentUnknownUserSnapshot(tw, request.signal, logger)
+            if (snapshot) {
+              rankedFallbackLookups += 1
+              results[tw] = snapshot.pb
               continue
             }
-
-            const pb = ranked.statistics?.total?.bestTime?.ranked
-            set(tw, typeof pb === 'number' ? pb : null)
-            continue
+          }
+          catch (error) {
+            logger.error('ranked_lookup_failed', error, { tw })
           }
 
           unmatchedUsers += 1
@@ -275,48 +487,34 @@ export const user = new Elysia({
           continue
         }
 
-        toFetch.push({ tw, uuid: user.mcUUID })
-      }
-
-      logger.log('ranked_fetches_queued', {
-        requestedCount: twList.length,
-        freshCacheHits,
-        staleCacheHits,
-        dbLookups,
-        rankedFallbackLookups,
-        unmatchedUsers,
-        usersWithoutUuid,
-        toFetchCount: toFetch.length,
-      })
-
-      await Promise.all(toFetch.map(async ({ tw, uuid }) => {
+        urgentFetches += 1
         try {
-          const ranked = await rankedUser(uuid, request.signal)
-          if (!ranked) {
-            results[tw] = null
-            return
-          }
-          const pb = ranked.statistics.total.bestTime.ranked as number | undefined
-          set(tw, typeof pb === 'number' ? pb : null)
+          const snapshot = await resolveUrgentLinkedSnapshot(user.twLogin, user.mcUUID, undefined, request.signal, {
+            allowStaleOnError: false,
+            logger,
+            source: 'bulk_cache_miss',
+          })
+          results[tw] = snapshot?.pb ?? null
         }
         catch (error) {
           logger.error('ranked_fetch_failed', error, {
             tw,
-            uuid,
+            uuid: user.mcUUID,
           })
-          results[tw] ??= null
+          results[tw] = null
         }
-      }))
+      }
 
       logger.log('success', {
-        requestedCount: twList.length,
+        requestedCount,
         freshCacheHits,
         staleCacheHits,
+        urgentFetches,
+        backgroundRefreshes,
         dbLookups,
         rankedFallbackLookups,
         unmatchedUsers,
         usersWithoutUuid,
-        toFetchCount: toFetch.length,
         resultCount: Object.keys(results).length,
       })
 
@@ -366,18 +564,11 @@ export const user = new Elysia({
       return status(500, 'Unexpected Twitch response.')
     }
 
-    logger.log('twitch_validated', { twLogin })
-
     const mcUsername = body.mcUsername.trim()
     if (!mcUsername) {
       logger.log('missing_mc_username', { twLogin })
       return status(400, 'Missing Minecraft username.')
     }
-
-    logger.log('ranked_lookup_started', {
-      twLogin,
-      mcUsername,
-    })
 
     const useFallback = () => {
       logger.log('ranked_not_found', {
@@ -401,7 +592,7 @@ export const user = new Elysia({
         mcUsername,
       })
       if (error instanceof Error && error.message === 'Ranked user fetch timed out') {
-        logger.error('ranked_lookup_timeout', {
+        logger.error('ranked_lookup_timeout', error, {
           twLogin,
           mcUsername,
         })
@@ -441,14 +632,13 @@ export const user = new Elysia({
       }
     }
 
-    logger.log('upsert_started', {
-      twLogin,
-      mcUsername: ranked.nickname,
-      mcUUID: ranked.uuid,
-    })
+    const snapshot = createRankedSnapshot(twLogin, ranked)
+    if (!snapshot)
+      return useFallback()
 
     try {
       await upsertUser(twLogin, ranked.uuid, ranked.nickname)
+      await setRankedCache(snapshot)
     }
     catch (error) {
       logger.error('upsert_failed', error, {
@@ -459,8 +649,6 @@ export const user = new Elysia({
       return status(500, 'Failed to save linked account.')
     }
 
-    clearCache(`pb:${twLogin}`)
-
     logger.log('success', {
       twLogin,
       mcUsername: ranked.nickname,
@@ -469,12 +657,7 @@ export const user = new Elysia({
 
     return {
       outcome: 'success' as const,
-      rankedInfo: {
-        mcUUID: ranked.uuid,
-        mcUsername: ranked.nickname,
-        pb: ranked.statistics?.total?.bestTime?.ranked ?? null,
-        elo: ranked.eloRate ?? null,
-      },
+      rankedInfo: createRankedInfo(snapshot),
     }
   }, {
     body: t.Object({
