@@ -49,7 +49,7 @@
 
   const isLoading = $derived(userStore.fetchStatus === 'loading')
   const hasLinkedAccount = $derived(user.rankedInfo !== null)
-  const showLinkForm = $derived(userStore.fetchStatus === 'loaded' && user.rankedInfo === null)
+  // const showLinkForm = $derived(user.rankedInfo === null)
   const rankedInfo = $derived(hasLinkedAccount ? user.rankedInfo : null)
 
   async function link() {
@@ -184,7 +184,8 @@
       <div class='i-fluent:spinner-ios-16-filled size-5 animate-spin'></div>
       <span class='text-foreground/50'>Loading...</span>
     </span>
-  {:else if showLinkForm}
+    <!-- {:else if showLinkForm} -->
+  {:else}
     <form class='flex items-center gap-2' onsubmit={submitLink}>
       <input
         class='h-8 w-full flex-1 border rounded-lg bg-background/80 px-3 py-2 text-sm font-[Ubuntu] focus:border-#86ce34 focus:shadow-none focus:outline-none focus:ring-none'
@@ -209,7 +210,7 @@
     {#if linkError}
       <p class='truncate text-xs text-orange'>{linkError}</p>
     {/if}
-  {:else}
-    <span class='text-foreground/50'>Unavailable</span>
+    <!-- {:else}
+    <span class='text-foreground/50'>Unavailable</span> -->
   {/if}
 </Box>

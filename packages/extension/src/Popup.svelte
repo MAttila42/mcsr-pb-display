@@ -48,7 +48,7 @@
       else if (status === 404) {
         userStore.resetRuntime()
         userStore.setFetchStatus('error')
-        apiError = `Could not find Twitch user @${normalizedLogin}.`
+      // apiError = `Could not find Twitch user @${normalizedLogin}.`
       }
       else {
         userStore.setFetchStatus('error')
