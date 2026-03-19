@@ -2,6 +2,13 @@
 
 Browser extension to have your Minecraft Speedrun PB displayed next to your name on Twitch.
 
+## Download
+
+- **Chrome Web Store**: https://chromewebstore.google.com/detail/mcsr-pb-display/dgioblgjeknikkfhfmjofjbfmfeonfnm
+- **Firefox Add-ons**: https://addons.mozilla.org/en-US/firefox/addon/mcsr-pb-display/
+- **Microsoft Edge Add-ons**: https://microsoftedge.microsoft.com/addons/detail/mcsr-pb-display/ojkimjccamgkjeljnlmmjpldgbianlaj
+- **GitHub Releases**: https://github.com/MAttila42/mcsr-pb-display/releases *(needs manual updates)*
+
 ## Contributing
 
 Contributions are welcome! Please open an issue or submit a pull request.
