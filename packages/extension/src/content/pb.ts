@@ -22,9 +22,7 @@ export async function getPb(tw: string): Promise<number | undefined> {
     return cached.value
 
   if (cached && cached.stale) {
-    void queueBulkFetch(twKey).catch((err) => {
-      console.error('[mcsr-pb-display] bulk refresh failed', err)
-    })
+    void queueBulkFetch(twKey).catch(() => {})
     return cached.value
   }
 
@@ -114,8 +112,7 @@ async function flushPending() {
       inFlight.delete(name)
     }
   }
-  catch (err) {
-    console.error('[mcsr-pb-display] failed to fetch PBs', err)
+  catch {
     for (const name of uniqueNames) {
       const resolvers = resolverMap.get(name)
       resolvers?.forEach(resolve => resolve(undefined))

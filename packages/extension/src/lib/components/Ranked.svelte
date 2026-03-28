@@ -130,13 +130,10 @@
       }
     }
     catch (error) {
-      if (error instanceof Error && error.name === 'AbortError') {
+      if (error instanceof Error && error.name === 'AbortError')
         linkError = 'Timed out while linking your account. Please try again.'
-      }
-      else {
-        console.error('Failed to link Ranked account', error)
+      else
         linkError = 'Failed to link account. Please try again.'
-      }
     }
     finally {
       linkLoading = false

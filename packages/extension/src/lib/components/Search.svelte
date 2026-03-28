@@ -44,10 +44,8 @@
         lookupError = 'Failed to fetch user data. Please try again later.'
     }
     catch (err) {
-      if (err instanceof Error && err.name !== 'AbortError') {
-        console.error('Lookup failed', err)
+      if (err instanceof Error && err.name !== 'AbortError')
         lookupError = 'Something went wrong. Please check your connection and try again.'
-      }
     }
     finally {
       lookupLoading = false

@@ -61,7 +61,6 @@
         apiError = 'Could not reach the API. Please check your connection and try again.'
       }
       else if (err instanceof Error && err.name !== 'AbortError') {
-        console.error('Failed to fetch user data', err)
         userStore.setFetchStatus('error')
         apiError = 'Something went wrong. Please check your connection and try again.'
       }
