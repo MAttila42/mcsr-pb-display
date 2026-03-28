@@ -10,13 +10,9 @@ import { auth } from './auth'
 import { db } from './db'
 import { Users } from './db/schema'
 import link from './link.html' with { type: 'text' }
-import { RankedThrottle } from './ranked-throttle'
-import { clearCache } from './store/cache'
-import { clearRankedCache } from './store/ranked-cache'
-import { setSession } from './store/session'
+import { setSession } from './service/session'
 import { user } from './user'
 import { twitchValidate } from './util'
-import { setWorkerEnv } from './worker-env'
 
 const handler = createHandler(auth)
 const MICROSOFT_IDENTITY_ASSOCIATION = JSON.stringify({
@@ -98,20 +94,15 @@ const app = new Elysia({
       })
       .where(eq(Users.twLogin, twitchLogin))
 
-    clearCache(`pb:${twitchLogin}`)
-    await clearRankedCache(twitchLogin)
-
     return status(204)
   })
   .get('/', () => 'This is the backend API for the MCSR PB Display extension. No content here.')
   .compile()
 
 export type App = typeof app
-export { RankedThrottle }
 
 export default {
-  async fetch(request: Request, env: CloudflareEnv): Promise<Response> {
-    setWorkerEnv(env)
+  async fetch(request: Request): Promise<Response> {
     return await app.fetch(request)
   },
 }

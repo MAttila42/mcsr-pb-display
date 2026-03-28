@@ -129,8 +129,6 @@ This file is for agentic coding tools working in `mcsr-pb-display`.
 - Prefer early-return guard clauses for invalid params, missing auth, and bad payloads
 - Single-line guards without braces are common and accepted; use braces for multi-line or nested branches
 - Wrap third-party network calls in `try/catch` when failure is a real branch
-- Use `AbortController` and timeouts around remote fetches that can hang
-- Clear timers and controllers in `finally`
 - Use `console.error` for unexpected operational failures; `no-console` is only a warning
 - Convert recoverable UI failures into user-facing messages
 - Prefer graceful degradation and stale cached data over blank states when possible
@@ -140,8 +138,6 @@ This file is for agentic coding tools working in `mcsr-pb-display`.
 
 - Follow the fluent Elysia chaining style used in `packages/api/src/index.ts` and `packages/api/src/user.ts`
 - Keep route/plugin singletons short and lowercase (`auth`, `user`, `db`)
-- Keep cache invalidation close to mutations such as link/unlink flows
-- Respect existing throttling helpers before adding new ranked, Twitch, Xbox, or Minecraft API calls
 - Keep API response messages short and specific
 - Preserve response shapes unless you update both API and extension together
 - Keep shared contract changes synchronized with `UserResponse` and `RankedInfo`
