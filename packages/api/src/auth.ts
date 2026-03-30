@@ -6,7 +6,7 @@ import { eq } from 'drizzle-orm'
 
 import { db } from './db'
 import { Users } from './db/schema'
-import { getSession } from './service/session'
+import { getSession } from './services/session'
 import {
   minecraftEntitlements,
   minecraftLogin,
@@ -14,7 +14,7 @@ import {
   twitchValidate,
   xblAuthenticate,
   xstsAuthorize,
-} from './util'
+} from './utils'
 
 export const auth = createAuth({
   adapter: MemoryAdapter(),
