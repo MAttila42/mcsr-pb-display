@@ -13,6 +13,11 @@ binding = "DB"
 database_name = "mcsr-pb-display"
 database_id = "cb05c75a-f2af-4a3d-811d-6e8da795b990"
 
+[[kv_namespaces]]
+binding = "PB_CACHE"
+id = "40435fcbcaab4f3b8a786bc92aea5fd5"
+preview_id = "7220545fdf5745bca419787ed968ad94"
+
 [observability]
 enabled = true
 head_sampling_rate = 1

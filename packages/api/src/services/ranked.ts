@@ -1,3 +1,5 @@
+import { setCachedPb } from './cache'
+
 const RANKED_USER = 'https://mcsrranked.com/api/users'
 const RANKED_TIMEOUT_MS = 5000
 
@@ -70,6 +72,9 @@ export async function getRankedUser(twitchId: string, signal?: AbortSignal): Pro
 
     if (!json.data.uuid || !json.data.nickname)
       return null
+
+    const pb = json.data.statistics?.total?.bestTime?.ranked ?? null
+    await setCachedPb(normalized, pb)
 
     return json.data
   }

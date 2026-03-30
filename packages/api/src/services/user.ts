@@ -4,7 +4,12 @@ import { eq, sql } from 'drizzle-orm'
 
 import { db } from '../db'
 import { Users } from '../db/schema'
-import { getRankedUser } from './ranked'
+import { getCachedPb } from './cache'
+import {
+  createPbRefreshPayload,
+  enqueuePriorityUpdateAndWait,
+  enqueueUpdate,
+} from './queue'
 
 const MAX_PBS_USERS = 200
 
@@ -110,19 +115,57 @@ export function parsePbsUsersQuery(usersQuery: unknown): string[] {
   return [...new Set(users)]
 }
 
+function isPbRefreshQueueResult(value: unknown): value is { pb: number | null } {
+  if (!value || typeof value !== 'object')
+    return false
+
+  const record = value as Record<string, unknown>
+  return record.type === 'pb-refresh' && (record.pb === null || typeof record.pb === 'number')
+}
+
+async function refreshPbInBackground(twLogin: string) {
+  try {
+    await enqueueUpdate(createPbRefreshPayload(twLogin))
+  }
+  catch (error) {
+    console.error('Failed to enqueue background PB refresh', { twLogin, error })
+  }
+}
+
+async function fetchPbWithPriorityQueue(twLogin: string, signal?: AbortSignal): Promise<number | null> {
+  const queueResult = await enqueuePriorityUpdateAndWait(createPbRefreshPayload(twLogin), { signal })
+  if (queueResult.status === 'failed')
+    throw new Error(queueResult.error ?? 'Priority PB refresh failed')
+
+  if (isPbRefreshQueueResult(queueResult.result))
+    return queueResult.result.pb
+
+  const cached = await getCachedPb(twLogin)
+  if (cached.status === 'miss')
+    return null
+
+  return cached.pb
+}
+
 export async function fetchBulkPbs(twList: string[], signal?: AbortSignal): Promise<Record<string, number | null>> {
   const results: Record<string, number | null> = Object.create(null)
 
   for (const tw of twList) {
     try {
-      const ranked = await getRankedUser(tw, signal)
-      if (!ranked) {
-        results[tw] = null
+      const cached = await getCachedPb(tw)
+
+      if (cached.status === 'fresh') {
+        results[tw] = cached.pb
         continue
       }
 
-      results[tw] = ranked.statistics?.total?.bestTime?.ranked ?? null
-      await upsertUser(tw, ranked.uuid, ranked.nickname)
+      if (cached.status === 'stale') {
+        results[tw] = cached.pb
+        void refreshPbInBackground(tw)
+        continue
+      }
+
+      results[tw] = await fetchPbWithPriorityQueue(tw, signal)
     }
     catch {
       results[tw] = null
