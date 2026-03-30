@@ -7,7 +7,7 @@ import { Elysia } from 'elysia'
 import { CloudflareAdapter } from 'elysia/adapter/cloudflare-worker'
 
 import { auth } from './auth'
-import { db } from './db'
+import { db, setDb } from './db'
 import { Users } from './db/schema'
 import link from './link.html' with { type: 'text' }
 import { setSession } from './service/session'
@@ -97,12 +97,14 @@ const app = new Elysia({
     return status(204)
   })
   .get('/', () => 'This is the backend API for the MCSR PB Display extension. No content here.')
+  .get('/test', async () => await db.select().from(Users).all())
   .compile()
 
 export type App = typeof app
 
 export default {
-  async fetch(request: Request): Promise<Response> {
+  async fetch(request: Request, env: CloudflareEnv): Promise<Response> {
+    setDb(env.DB)
     return await app.fetch(request)
   },
 }
