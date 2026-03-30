@@ -1,11 +1,14 @@
 <script lang='ts'>
+  import type { ExtensionVersionSupportResponse } from '@api/types/extension'
   import type { UserResponse } from '@api/types/user'
   import { api } from '$lib/api'
   import KoFi from '$lib/components/KoFi.svelte'
   import Ranked from '$lib/components/Ranked.svelte'
   import Search from '$lib/components/Search.svelte'
   import Twitch from '$lib/components/Twitch.svelte'
+  import { fetchWithTimeout } from '$lib/fetch'
   import { userStore } from '$lib/stores/user.svelte'
+  import { isVersionAtLeast } from '$lib/utils/version'
   import { onMount } from 'svelte'
   import browser from 'webextension-polyfill'
   import '@unocss/reset/tailwind.css'
@@ -18,13 +21,55 @@
     login?: string
   }
 
+  type CompatibilityStatus = 'loading' | 'supported' | 'unsupported' | 'error'
+
   let token: string | undefined = $state('')
   let login: string | undefined = $state('')
   let isLoaded: boolean = $state(false)
   let apiError: string | undefined = $state(undefined)
+  let extensionVersion: string = $state('0.0.0')
+  let minimumSupportedVersion: string | undefined = $state(undefined)
+  let compatibilityStatus: CompatibilityStatus = $state('loading')
+  let compatibilityError: string | undefined = $state(undefined)
   let abortController: AbortController | null = null
 
   const TIMEOUT_MS = 30000
+
+  async function fetchExtensionSupport() {
+    try {
+      const response = await fetchWithTimeout(`${import.meta.env.VITE_API_URL}/extension/version`, {}, TIMEOUT_MS)
+
+      if (!response.ok) {
+        compatibilityStatus = 'error'
+        compatibilityError = 'Failed to verify extension compatibility. Please try again later.'
+        return
+      }
+
+      const data = await response.json() as Partial<ExtensionVersionSupportResponse>
+      if (typeof data.minimumSupportedVersion !== 'string') {
+        compatibilityStatus = 'error'
+        compatibilityError = 'Failed to verify extension compatibility. Please try again later.'
+        return
+      }
+
+      minimumSupportedVersion = data.minimumSupportedVersion
+
+      if (!isVersionAtLeast(extensionVersion, data.minimumSupportedVersion)) {
+        compatibilityStatus = 'unsupported'
+        return
+      }
+
+      compatibilityStatus = 'supported'
+    }
+    catch (err) {
+      compatibilityStatus = 'error'
+
+      if (err instanceof Error && err.name === 'AbortError')
+        compatibilityError = 'Timed out while verifying extension compatibility. Please try again later.'
+      else
+        compatibilityError = 'Failed to verify extension compatibility. Please try again later.'
+    }
+  }
 
   async function fetchUserData(twLogin: string) {
     const normalizedLogin = twLogin.toLowerCase()
@@ -73,6 +118,15 @@
 
   onMount(() => {
     (async () => {
+      extensionVersion = browser.runtime.getManifest().version
+      await fetchExtensionSupport()
+
+      if (compatibilityStatus !== 'supported') {
+        userStore.resetRuntime()
+        isLoaded = true
+        return
+      }
+
       const raw = await browser.storage.local.get(['authToken', 'login'])
       const result = raw as StoredState
       token = result.authToken
@@ -106,17 +160,41 @@
   {#if apiError}
     <p class='border border-destructive/40 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive'>{apiError}</p>
   {/if}
-  <Search />
-  <div class='flex flex-col gap-3'>
-    {#if isLoaded}
-      <Twitch name={login} status={userStore.fetchStatus} />
-      {#if login}
-        <Ranked token={token!} />
+  {#if compatibilityStatus === 'error' && compatibilityError}
+    <p class='border border-destructive/40 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive'>{compatibilityError}</p>
+  {/if}
+
+  {#if compatibilityStatus === 'supported'}
+    <Search />
+    <div class='flex flex-col gap-3'>
+      {#if isLoaded}
+        <Twitch name={login} status={userStore.fetchStatus} />
+        {#if login}
+          <Ranked token={token!} />
+        {/if}
+      {:else}
+        Loading...
       {/if}
-    {:else}
-      Loading...
-    {/if}
-  </div>
+    </div>
+  {:else if compatibilityStatus === 'unsupported'}
+    <div class='flex flex-col gap-1 border border-destructive/40 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive'>
+      <p>
+        This extension version is no longer supported. Please update to
+        {#if minimumSupportedVersion}
+          v{minimumSupportedVersion}
+        {:else}
+          the latest version
+        {/if}
+        or newer.
+      </p>
+      <a href='https://github.com/MAttila42/mcsr-pb-display/?tab=readme-ov-file#download' target='_blank' class='w-max'>
+        Download latest
+      </a>
+    </div>
+  {:else if compatibilityStatus === 'loading'}
+    <p class='text-center text-sm text-foreground/70'>Checking extension compatibility...</p>
+  {/if}
+
   <KoFi />
   <div class='flex flex-col text-sm'>
     <div class='flex flex-row items-center justify-center gap-2'>
@@ -140,6 +218,9 @@
         <span class='i-mdi:github size-5'></span>
         <span>GitHub</span>
       </a>
+    </div>
+    <div class='mt-1 flex flex-row items-center justify-center gap-2 text-xs text-foreground/70'>
+      <span class='font-["Ubuntu_Mono"]'>v{extensionVersion}</span>
     </div>
   </div>
 </main>

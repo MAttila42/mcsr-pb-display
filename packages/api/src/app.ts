@@ -1,3 +1,4 @@
+import type { ExtensionVersionSupportResponse } from './types/extension'
 import process from 'node:process'
 import { cors } from '@elysiajs/cors'
 import { createHandler } from '@rttnd/gau/core'
@@ -11,6 +12,7 @@ import { link } from './plugins/link'
 import { user } from './plugins/user'
 
 const handler = createHandler(auth)
+const MINIMUM_SUPPORTED_EXTENSION_VERSION = '0.2.2'
 const MICROSOFT_IDENTITY_ASSOCIATION = JSON.stringify({
   associatedApplications: [
     {
@@ -27,6 +29,9 @@ export const app = new Elysia({
   .use(cors())
   .use(user)
   .use(link)
+  .get('/extension/version', (): ExtensionVersionSupportResponse => ({
+    minimumSupportedVersion: MINIMUM_SUPPORTED_EXTENSION_VERSION,
+  }))
   .get('/.well-known/microsoft-identity-association.json', () => new Response(MICROSOFT_IDENTITY_ASSOCIATION, {
     headers: { 'Content-Type': 'application/json' },
   }))
