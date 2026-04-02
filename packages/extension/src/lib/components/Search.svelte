@@ -7,6 +7,33 @@
   import * as Card from '$lib/components/ui/card'
   import { formatTime } from '$lib/utils'
 
+  function isRankedInfo(value: unknown): value is NonNullable<UserResponse['rankedInfo']> {
+    if (!value || typeof value !== 'object')
+      return false
+
+    const record = value as Record<string, unknown>
+
+    return typeof record.mcUUID === 'string'
+      && typeof record.mcUsername === 'string'
+      && (record.pb === null || typeof record.pb === 'number')
+      && (record.elo === null || typeof record.elo === 'number')
+  }
+
+  function isUserResponse(value: unknown): value is UserResponse {
+    if (!value || typeof value !== 'object')
+      return false
+
+    const record = value as Record<string, unknown>
+
+    if (typeof record.twLogin !== 'string')
+      return false
+
+    if (record.rankedInfo !== null && !isRankedInfo(record.rankedInfo))
+      return false
+
+    return true
+  }
+
   let lookupName: string = $state('')
   let lookupResult: UserResponse | null = $state(null)
   let lookupError: string | undefined = $state(undefined)
@@ -34,12 +61,11 @@
       const { data, status } = await api.user({ tw: trimmed }).get({
         fetch: { signal: abortController.signal },
       })
-      const userData = data as UserResponse | null
 
-      if (userData)
-        lookupResult = userData
-      else if (status === 404)
+      if (status === 404)
         lookupError = `No data found for @${trimmed}.`
+      else if (isUserResponse(data))
+        lookupResult = data
       else
         lookupError = 'Failed to fetch user data. Please try again later.'
     }

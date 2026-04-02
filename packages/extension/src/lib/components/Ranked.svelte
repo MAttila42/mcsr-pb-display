@@ -87,7 +87,7 @@
     linkError = undefined
 
     try {
-      const response = await fetchWithTimeout(`${import.meta.env.VITE_API_URL}/user/link/ranked`, {
+      const response = await fetchWithTimeout(`${import.meta.env.VITE_API_URL}/link/ranked`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

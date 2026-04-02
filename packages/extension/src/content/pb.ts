@@ -1,7 +1,8 @@
 import { fetchBulkPbs } from './api'
 import { getSessionCache, setSessionCache } from './cache'
 
-const PB_TTL = 15 * 60 * 1000
+const PB_TTL_WITH_PB_MS = 12 * 60 * 60 * 1000
+const PB_TTL_WITHOUT_PB_MS = 4 * 24 * 60 * 60 * 1000
 const BATCH_WINDOW_MS = 1000
 
 const pendingNames: string[] = []
@@ -106,7 +107,10 @@ async function flushPending() {
     for (const name of uniqueNames) {
       const raw = result[name] ?? null
       const value = raw === null ? undefined : raw
-      setSessionCache(`pb:${name}`, value, PB_TTL)
+      const ttl = value === undefined
+        ? PB_TTL_WITHOUT_PB_MS
+        : PB_TTL_WITH_PB_MS
+      setSessionCache(`pb:${name}`, value, ttl)
       const resolvers = resolverMap.get(name)
       resolvers?.forEach(resolve => resolve(value))
       inFlight.delete(name)

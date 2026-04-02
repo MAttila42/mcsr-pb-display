@@ -23,6 +23,33 @@
 
   type CompatibilityStatus = 'loading' | 'supported' | 'unsupported' | 'error'
 
+  function isRankedInfo(value: unknown): value is NonNullable<UserResponse['rankedInfo']> {
+    if (!value || typeof value !== 'object')
+      return false
+
+    const record = value as Record<string, unknown>
+
+    return typeof record.mcUUID === 'string'
+      && typeof record.mcUsername === 'string'
+      && (record.pb === null || typeof record.pb === 'number')
+      && (record.elo === null || typeof record.elo === 'number')
+  }
+
+  function isUserResponse(value: unknown): value is UserResponse {
+    if (!value || typeof value !== 'object')
+      return false
+
+    const record = value as Record<string, unknown>
+
+    if (typeof record.twLogin !== 'string')
+      return false
+
+    if (record.rankedInfo !== null && !isRankedInfo(record.rankedInfo))
+      return false
+
+    return true
+  }
+
   let token: string | undefined = $state('')
   let login: string | undefined = $state('')
   let isLoaded: boolean = $state(false)
@@ -83,17 +110,15 @@
         fetch: { signal: abortController.signal },
       })
 
-      const userData = data as UserResponse | null
-
-      if (userData) {
-        await userStore.setUser(userData)
+      if (status === 404) {
+        userStore.resetRuntime()
         userStore.setFetchStatus('loaded')
         apiError = undefined
       }
-      else if (status === 404) {
-        userStore.resetRuntime()
-        userStore.setFetchStatus('error')
-      // apiError = `Could not find Twitch user @${normalizedLogin}.`
+      else if (isUserResponse(data)) {
+        await userStore.setUser(data)
+        userStore.setFetchStatus('loaded')
+        apiError = undefined
       }
       else {
         userStore.setFetchStatus('error')
@@ -139,9 +164,10 @@
         return
       }
 
-      userStore.setFetchStatus('loading')
       await userStore.hydrate(login)
+
       userStore.setFetchStatus('loading')
+
       await fetchUserData(login)
     })()
 
