@@ -134,7 +134,8 @@ export async function getCachedPb(twLogin: string): Promise<PbCacheLookup> {
     }
   }
 
-  if (ageMs <= getFreshWindowMs(kvValue.pb)) {
+  const freshWindowMs = getFreshWindowMs(kvValue.pb)
+  if (ageMs <= freshWindowMs) {
     return {
       status: 'fresh',
       pb: kvValue.pb,
@@ -164,8 +165,9 @@ export async function setCachedPb(twLogin: string, pb: number | null) {
   l1PbCache.set(normalized, entry)
 
   const kv = ensurePbCacheBinding()
+  const hardTtlSeconds = getHardTtlSeconds(pb)
   await kv.put(keyFor(normalized), JSON.stringify(entry), {
-    expirationTtl: getHardTtlSeconds(pb),
+    expirationTtl: hardTtlSeconds,
   })
 
   return entry

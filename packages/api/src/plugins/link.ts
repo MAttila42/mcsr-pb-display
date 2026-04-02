@@ -19,7 +19,7 @@ export const link = new Elysia({
   .get('/link', () => new Response(linkPage.toString(), {
     headers: { 'Content-Type': 'text/html' },
   }))
-  .post('/link/ranked', async ({ headers, request, status }: any) => {
+  .post('/link/ranked', async ({ body, headers, request, status }: any) => {
     const authHeader = headers.authorization
     if (!authHeader || !authHeader.startsWith('Bearer '))
       return status(401, 'Missing or invalid Authorization header.')
@@ -45,9 +45,15 @@ export const link = new Elysia({
     if (!twLogin)
       return status(500, 'Unexpected Twitch response.')
 
+    const mcUsername = typeof body?.mcUsername === 'string'
+      ? body.mcUsername.trim()
+      : ''
+    if (!mcUsername)
+      return status(400, 'Missing Minecraft username.')
+
     let ranked
     try {
-      ranked = await getRankedUser(twLogin, request.signal)
+      ranked = await getRankedUser(mcUsername, request.signal, twLogin)
     }
     catch (error) {
       if (error instanceof Error && error.message === 'Ranked user fetch timed out')
@@ -60,7 +66,7 @@ export const link = new Elysia({
       return {
         outcome: 'fallback' as const,
         reason: 'not_found' as const,
-        message: 'Could not find a Ranked account linked to your Twitch account.',
+        message: 'Could not verify your Ranked account via Twitch link. Continue with Microsoft login.',
       }
     }
 

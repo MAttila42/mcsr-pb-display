@@ -31,11 +31,13 @@ export const user = new Elysia({
     const tw = params.tw.toLowerCase()
 
     const dbUser = await findUserByTwitchLogin(tw)
+    const rankedIdentifier = dbUser?.mcUsername ?? tw
+
     if (dbUser && !dbUser.mcUUID)
       return { twLogin: dbUser.twLogin, rankedInfo: null }
 
     try {
-      const ranked = await getRankedUser(tw, request.signal)
+      const ranked = await getRankedUser(rankedIdentifier, request.signal, tw)
       const rankedInfo = createRankedInfo(ranked)
 
       if (!rankedInfo) {

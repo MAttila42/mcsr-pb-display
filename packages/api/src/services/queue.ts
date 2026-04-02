@@ -1,8 +1,8 @@
 import { waitUntil } from 'cloudflare:workers'
-import { and, asc, desc, eq } from 'drizzle-orm'
+import { and, asc, desc, eq, sql } from 'drizzle-orm'
 
 import { db } from '../db'
-import { UpdateQueueItems } from '../db/schema'
+import { UpdateQueueItems, Users } from '../db/schema'
 import { setCachedPb } from './cache'
 import { getRankedUser } from './ranked'
 
@@ -61,6 +61,12 @@ interface ConsumeOptions {
   maxItems?: number
 }
 
+interface UserLinkRow {
+  twLogin: string
+  mcUUID: string | null
+  mcUsername: string | null
+}
+
 let runtimeQueue: CloudflareQueueBinding | undefined
 
 function sleep(ms: number) {
@@ -112,6 +118,75 @@ async function sendWakeSignal() {
 
 function normalizeTwitchLogin(twLogin: string) {
   return twLogin.toLowerCase().trim()
+}
+
+function hasLinkedAccount(user: UserLinkRow | undefined) {
+  return Boolean(user?.mcUUID && user.mcUsername)
+}
+
+async function findUserLinkByTwitchLogin(twLogin: string): Promise<UserLinkRow | undefined> {
+  const [user] = await db
+    .select({
+      twLogin: Users.twLogin,
+      mcUUID: Users.mcUUID,
+      mcUsername: Users.mcUsername,
+    })
+    .from(Users)
+    .where(eq(Users.twLogin, twLogin))
+
+  if (user)
+    return user
+
+  const [caseInsensitiveUser] = await db
+    .select({
+      twLogin: Users.twLogin,
+      mcUUID: Users.mcUUID,
+      mcUsername: Users.mcUsername,
+    })
+    .from(Users)
+    .where(sql`lower(${Users.twLogin}) = ${twLogin}`)
+
+  if (!caseInsensitiveUser)
+    return undefined
+
+  if (caseInsensitiveUser.twLogin === twLogin)
+    return caseInsensitiveUser
+
+  try {
+    await db
+      .update(Users)
+      .set({
+        twLogin,
+        updatedAt: new Date(),
+      })
+      .where(eq(Users.twLogin, caseInsensitiveUser.twLogin))
+
+    return {
+      ...caseInsensitiveUser,
+      twLogin,
+    }
+  }
+  catch {
+    return caseInsensitiveUser
+  }
+}
+
+async function upsertUserLink(twLogin: string, mcUUID: string, mcUsername: string) {
+  await db
+    .insert(Users)
+    .values({
+      twLogin,
+      mcUUID,
+      mcUsername,
+    })
+    .onConflictDoUpdate({
+      target: Users.twLogin,
+      set: {
+        mcUUID,
+        mcUsername,
+        updatedAt: new Date(),
+      },
+    })
 }
 
 function isPbRefreshQueuePayload(payload: JsonValue): payload is PbRefreshQueuePayload {
@@ -198,8 +273,27 @@ async function processQueuePayload(payload: JsonValue): Promise<PbRefreshQueueRe
   if (!twLogin)
     throw new Error('Missing Twitch login in queue payload')
 
-  const ranked = await getRankedUser(twLogin)
+  const linkedUser = await findUserLinkByTwitchLogin(twLogin)
+
+  let ranked = null
+
+  if (linkedUser?.mcUsername)
+    ranked = await getRankedUser(linkedUser.mcUsername, undefined, twLogin)
+
+  const hasTriedTwitchName = linkedUser?.mcUsername?.toLowerCase() === twLogin
+  if (!ranked && !hasTriedTwitchName)
+    ranked = await getRankedUser(twLogin, undefined, twLogin)
+
   const pb = ranked?.statistics?.total?.bestTime?.ranked ?? null
+
+  if (ranked) {
+    const shouldUpsertLink = !hasLinkedAccount(linkedUser)
+      || linkedUser?.mcUUID !== ranked.uuid
+      || linkedUser?.mcUsername !== ranked.nickname
+
+    if (shouldUpsertLink)
+      await upsertUserLink(twLogin, ranked.uuid, ranked.nickname)
+  }
 
   if (!ranked)
     await setCachedPb(twLogin, null)
@@ -225,11 +319,13 @@ async function markCompleted(itemId: number, result: JsonValue) {
 }
 
 async function markFailed(itemId: number, error: unknown) {
+  const serializedError = serializeError(error)
+
   await db
     .update(UpdateQueueItems)
     .set({
       status: 'failed',
-      error: serializeError(error),
+      error: serializedError,
       finishedAt: new Date(),
     })
     .where(eq(UpdateQueueItems.id, itemId))

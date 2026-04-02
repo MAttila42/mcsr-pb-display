@@ -43,14 +43,18 @@ function createTimeoutSignal(timeoutMs: number, signal?: AbortSignal) {
   }
 }
 
-export async function getRankedUser(twitchId: string, signal?: AbortSignal): Promise<RankedUser | null> {
-  const normalized = twitchId.toLowerCase()
+export async function getRankedUser(identifier: string, signal?: AbortSignal, expectedTwitchLogin?: string): Promise<RankedUser | null> {
+  const normalizedIdentifier = identifier.toLowerCase()
+  const normalizedExpectedTwitchLogin = (expectedTwitchLogin ?? identifier).toLowerCase()
   const request = createTimeoutSignal(RANKED_TIMEOUT_MS, signal)
 
   try {
-    const response = await fetch(`${RANKED_USER}/${encodeURIComponent(normalized)}`, {
+    const response = await fetch(`${RANKED_USER}/${encodeURIComponent(normalizedIdentifier)}`, {
       signal: request.signal,
     })
+
+    if (response.status === 404)
+      return null
 
     if (!response.ok)
       throw new Error('Ranked user fetch failed')
@@ -67,14 +71,15 @@ export async function getRankedUser(twitchId: string, signal?: AbortSignal): Pro
     if (!twitchConnection?.id)
       return null
 
-    if (twitchConnection.id.toLowerCase() !== normalized)
+    const normalizedTwitchConnectionId = twitchConnection.id.toLowerCase()
+    if (normalizedTwitchConnectionId !== normalizedExpectedTwitchLogin)
       return null
 
     if (!json.data.uuid || !json.data.nickname)
       return null
 
     const pb = json.data.statistics?.total?.bestTime?.ranked ?? null
-    await setCachedPb(normalized, pb)
+    await setCachedPb(normalizedExpectedTwitchLogin, pb)
 
     return json.data
   }
