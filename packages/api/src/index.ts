@@ -1,7 +1,7 @@
 import { app } from './app'
 import { setDb } from './db'
 import { setPbCache } from './services/cache'
-import { consumeUpdateQueueItems, setUpdateQueue } from './services/queue'
+import { consumePbRefreshQueue, setUpdateQueue } from './services/queue'
 
 export type { App } from './app'
 
@@ -15,8 +15,7 @@ export default {
 
   async queue(batch: CloudflareQueueBatch, env: CloudflareEnv): Promise<void> {
     setDb(env.DB)
-    setUpdateQueue(env.UPDATE_QUEUE)
     setPbCache(env.PB_CACHE)
-    await consumeUpdateQueueItems({ maxItems: batch.messages.length || 1 })
+    await consumePbRefreshQueue(batch)
   },
 }

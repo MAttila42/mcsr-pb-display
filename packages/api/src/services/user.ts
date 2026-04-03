@@ -5,11 +5,8 @@ import { eq, sql } from 'drizzle-orm'
 import { db } from '../db'
 import { Users } from '../db/schema'
 import { getCachedPb } from './cache'
-import {
-  createPbRefreshPayload,
-  enqueuePriorityUpdateAndWait,
-  enqueueUpdate,
-} from './queue'
+import { enqueuePbRefresh } from './queue'
+import { refreshPbForTwitchLogin } from './refresh'
 
 const MAX_PBS_USERS = 200
 
@@ -115,36 +112,18 @@ export function parsePbsUsersQuery(usersQuery: unknown): string[] {
   return [...new Set(users)]
 }
 
-function isPbRefreshQueueResult(value: unknown): value is { pb: number | null } {
-  if (!value || typeof value !== 'object')
-    return false
-
-  const record = value as Record<string, unknown>
-  return record.type === 'pb-refresh' && (record.pb === null || typeof record.pb === 'number')
-}
-
 async function refreshPbInBackground(twLogin: string) {
   try {
-    await enqueueUpdate(createPbRefreshPayload(twLogin))
+    await enqueuePbRefresh(twLogin)
   }
   catch (error) {
     console.error('Failed to enqueue background PB refresh', { twLogin, error })
   }
 }
 
-async function fetchPbWithPriorityQueue(twLogin: string, signal?: AbortSignal): Promise<number | null> {
-  const queueResult = await enqueuePriorityUpdateAndWait(createPbRefreshPayload(twLogin), { signal })
-  if (queueResult.status === 'failed')
-    throw new Error(queueResult.error ?? 'Priority PB refresh failed')
-
-  if (isPbRefreshQueueResult(queueResult.result))
-    return queueResult.result.pb
-
-  const cached = await getCachedPb(twLogin)
-  if (cached.status === 'miss')
-    return null
-
-  return cached.pb
+async function fetchPbDirectly(twLogin: string, signal?: AbortSignal): Promise<number | null> {
+  const refreshed = await refreshPbForTwitchLogin(twLogin, signal)
+  return refreshed.pb
 }
 
 export async function fetchBulkPbs(twList: string[], signal?: AbortSignal): Promise<Record<string, number | null>> {
@@ -165,7 +144,7 @@ export async function fetchBulkPbs(twList: string[], signal?: AbortSignal): Prom
         continue
       }
 
-      results[tw] = await fetchPbWithPriorityQueue(tw, signal)
+      results[tw] = await fetchPbDirectly(tw, signal)
     }
     catch {
       results[tw] = null
