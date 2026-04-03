@@ -1,4 +1,4 @@
-import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
+import { integer, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core'
 
 export const Users = sqliteTable('users', {
   twLogin: text('tw_login').primaryKey(),
@@ -6,7 +6,9 @@ export const Users = sqliteTable('users', {
   mcUsername: text('mc_username'),
   createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
-})
+}, table => ({
+  twitchLoginIdx: uniqueIndex('twitchLoginIdx').on(table.twLogin),
+}))
 
 export type SelectUser = typeof Users.$inferSelect
 export type InsertUser = typeof Users.$inferInsert
