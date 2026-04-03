@@ -6,12 +6,45 @@
   import { Button } from '$lib/components/ui/button'
   import * as Card from '$lib/components/ui/card'
   import { formatTime } from '$lib/utils'
+  import { onMount } from 'svelte'
+
+  function isRankedInfo(value: unknown): value is NonNullable<UserResponse['rankedInfo']> {
+    if (!value || typeof value !== 'object')
+      return false
+
+    const record = value as Record<string, unknown>
+
+    return typeof record.mcUUID === 'string'
+      && typeof record.mcUsername === 'string'
+      && (record.pb === null || typeof record.pb === 'number')
+      && (record.elo === null || typeof record.elo === 'number')
+  }
+
+  function isUserResponse(value: unknown): value is UserResponse {
+    if (!value || typeof value !== 'object')
+      return false
+
+    const record = value as Record<string, unknown>
+
+    if (typeof record.twLogin !== 'string')
+      return false
+
+    if (record.rankedInfo !== null && !isRankedInfo(record.rankedInfo))
+      return false
+
+    return true
+  }
 
   let lookupName: string = $state('')
   let lookupResult: UserResponse | null = $state(null)
   let lookupError: string | undefined = $state(undefined)
   let lookupLoading: boolean = $state(false)
   let abortController: AbortController | null = null
+  let searchInput: HTMLInputElement | null = null
+
+  onMount(() => {
+    searchInput?.focus()
+  })
 
   async function lookupUser(event: SubmitEvent) {
     event.preventDefault()
@@ -34,20 +67,17 @@
       const { data, status } = await api.user({ tw: trimmed }).get({
         fetch: { signal: abortController.signal },
       })
-      const userData = data as UserResponse | null
 
-      if (userData)
-        lookupResult = userData
-      else if (status === 404)
+      if (status === 404)
         lookupError = `No data found for @${trimmed}.`
+      else if (isUserResponse(data))
+        lookupResult = data
       else
         lookupError = 'Failed to fetch user data. Please try again later.'
     }
     catch (err) {
-      if (err instanceof Error && err.name !== 'AbortError') {
-        console.error('Lookup failed', err)
+      if (err instanceof Error && err.name !== 'AbortError')
         lookupError = 'Something went wrong. Please check your connection and try again.'
-      }
     }
     finally {
       lookupLoading = false
@@ -60,6 +90,7 @@
   <Card.Content class='p-0 space-y-3'>
     <form class='flex items-center gap-2' onsubmit={lookupUser}>
       <input
+        bind:this={searchInput}
         class='flex-1 border border-foreground/15 rounded-lg bg-background/80 px-3 py-2 text-sm text-foreground font-[Ubuntu] focus:border-primary placeholder:text-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/40'
         placeholder='Check Twitch user'
         bind:value={lookupName}

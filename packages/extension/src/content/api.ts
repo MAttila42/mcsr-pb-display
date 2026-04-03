@@ -50,16 +50,14 @@ export async function fetchUser(tw: string): Promise<UserResponse> {
 }
 
 export async function fetchBulkPbs(tws: string[]): Promise<Record<string, number | null>> {
+  const users = tws
+    .map(tw => tw.toLowerCase())
+    .join(',')
+
   let res: Response
 
   try {
-    res = await fetchWithTimeout(`${API_URL}/user/pbs`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(tws.map(t => t.toLowerCase())),
-    })
+    res = await fetchWithTimeout(`${API_URL}/user/pbs?users=${encodeURIComponent(users)}`)
   }
   catch (err) {
     if (err instanceof Error && err.name === 'AbortError')

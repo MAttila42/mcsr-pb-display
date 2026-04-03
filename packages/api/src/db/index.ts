@@ -1,13 +1,23 @@
-import process from 'node:process'
-import { drizzle } from 'drizzle-orm/libsql'
+import type { AnyD1Database } from 'drizzle-orm/d1'
+import { drizzle } from 'drizzle-orm/d1'
 
-const isDev = process.env.NODE_ENV === 'development'
+export type Db = ReturnType<typeof drizzle>
 
-export const db = drizzle({
-  connection: {
-    url: isDev
-      ? process.env.DATABASE_URL_LOCAL!
-      : process.env.DATABASE_URL_REMOTE!,
-    authToken: process.env.DATABASE_AUTH_TOKEN!,
+let runtimeDb: Db | undefined
+
+export const db = new Proxy({} as Db, {
+  get(_target, prop) {
+    if (!runtimeDb)
+      throw new Error('Database not initialized. Did you forget to call setDb?')
+
+    const value = Reflect.get(runtimeDb, prop)
+    if (typeof value === 'function')
+      return value.bind(runtimeDb)
+
+    return value
   },
-})
+}) as Db
+
+export function setDb(d1: AnyD1Database) {
+  runtimeDb = drizzle(d1)
+}

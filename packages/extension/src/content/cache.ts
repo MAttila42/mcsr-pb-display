@@ -46,8 +46,3 @@ export function getSessionCache<T>(key: string): CacheResult<T> | undefined {
 export function clearSessionCache(key: string) {
   sessionCacheStore.delete(key)
 }
-
-/** Clear all session-scoped cached values. */
-export function clearAllSessionCache() {
-  sessionCacheStore.clear()
-}

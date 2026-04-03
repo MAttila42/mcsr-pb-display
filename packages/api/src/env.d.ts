@@ -1,45 +1,65 @@
-interface RankedThrottleRequest {
-  identifier?: string
+interface CloudflareQueueBinding {
+  send: <Body = unknown>(body: Body, options?: {
+    contentType?: 'text' | 'bytes' | 'json' | 'v8'
+    delaySeconds?: number
+  }) => Promise<void>
 }
 
-interface RankedCacheSnapshot {
-  twLogin: string
-  mcUUID: string
-  mcUsername: string
-  pb: number | null
-  elo: number | null
-  fetchedAt: number
+interface CloudflareKVNamespace {
+  get: {
+    (key: string): Promise<string | null>
+    (key: string, type: 'text'): Promise<string | null>
+    (key: string, type: 'json'): Promise<unknown | null>
+    (key: string, type: 'arrayBuffer'): Promise<ArrayBuffer | null>
+    (key: string, type: 'stream'): Promise<ReadableStream | null>
+  }
+  put: (
+    key: string,
+    value: string | ArrayBuffer | ArrayBufferView | ReadableStream,
+    options?: {
+      expiration?: number
+      expirationTtl?: number
+      metadata?: unknown
+    },
+  ) => Promise<void>
+  delete: (key: string) => Promise<void>
 }
 
-interface RankedThrottleRpc {
-  acquire: (request?: RankedThrottleRequest) => Promise<void>
-  getCachedSnapshot: (twLogin: string) => Promise<RankedCacheSnapshot | null>
-  getCachedSnapshots: (twLogins: string[]) => Promise<Record<string, RankedCacheSnapshot>>
-  setCachedSnapshot: (snapshot: RankedCacheSnapshot) => Promise<void>
-  deleteCachedSnapshot: (twLogin: string) => Promise<void>
+interface CloudflareQueueMessage<Body = unknown> {
+  id: string
+  body: Body
+  attempts: number
+  ack: () => void
+  retry: (options?: { delaySeconds?: number }) => void
 }
 
-interface DurableObjectNamespace<T = unknown> {
-  getByName: (name: string) => T
+interface CloudflareQueueBatch<Body = unknown> {
+  queue: string
+  messages: ReadonlyArray<CloudflareQueueMessage<Body>>
+  ackAll: () => void
+  retryAll: (options?: { delaySeconds?: number }) => void
 }
 
 interface CloudflareEnv {
   NODE_ENV: string
-  DATABASE_URL_LOCAL: string
-  DATABASE_URL_REMOTE: string
-  DATABASE_AUTH_TOKEN: string
+  DB: D1Database
+  UPDATE_QUEUE: CloudflareQueueBinding
+  PB_CACHE: CloudflareKVNamespace
+  CLOUDFLARE_ACCOUNT_ID: string
+  CLOUDFLARE_DATABASE_ID: string
+  CLOUDFLARE_D1_TOKEN: string
   AUTH_SECRET: string
   MICROSOFT_CLIENT_ID: string
   MICROSOFT_CLIENT_SECRET: string
-  RANKED_THROTTLE: DurableObjectNamespace<RankedThrottleRpc>
 }
 
 declare module 'bun' {
   interface Env {
     NODE_ENV: string
     DATABASE_URL_LOCAL: string
-    DATABASE_URL_REMOTE: string
-    DATABASE_AUTH_TOKEN: string
+    CLOUDFLARE_ACCOUNT_ID: string
+    CLOUDFLARE_DATABASE_ID: string
+    CLOUDFLARE_D1_TOKEN: string
     AUTH_SECRET: string
     MICROSOFT_CLIENT_ID: string
     MICROSOFT_CLIENT_SECRET: string
@@ -47,22 +67,5 @@ declare module 'bun' {
 }
 
 declare module 'cloudflare:workers' {
-  export interface DurableObjectStorage {
-    get: <T>(key: string) => Promise<T | undefined>
-    put: <T>(key: string, value: T) => Promise<void>
-    delete: (key: string) => Promise<boolean>
-  }
-
-  export interface DurableObjectState<Props = unknown> {
-    storage: DurableObjectStorage
-  }
-
-  export abstract class DurableObject<Env = unknown> {
-    protected readonly ctx: DurableObjectState
-    protected readonly env: Env
-
-    constructor(ctx: DurableObjectState, env: Env)
-  }
-
   export function waitUntil(promise: Promise<unknown>): void
 }

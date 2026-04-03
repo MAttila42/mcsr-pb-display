@@ -13,6 +13,8 @@ const REQUESTS_PER_WINDOW = 600
 const WINDOW_MS = 10 * 60 * 1000
 const INTERVAL_MS = Math.ceil(WINDOW_MS / REQUESTS_PER_WINDOW)
 
+const REGEXP_URL = /^https?:\/\//i
+
 const rawApiOverride = (process.env.MC_API_OVERRIDE ?? '').trim()
 const proxyToken = (process.env.PROXY_TOKEN ?? '').trim()
 
@@ -29,7 +31,7 @@ async function throttledFetch(...args: Parameters<typeof fetch>) {
 }
 
 function buildTargetUrl(path: string) {
-  if (/^https?:\/\//i.test(path))
+  if (REGEXP_URL.test(path))
     return path
   const baseWithSlash = ensureTrailingSlash(targetBase || DEFAULT_MC_API)
   return new URL(path, baseWithSlash).toString()

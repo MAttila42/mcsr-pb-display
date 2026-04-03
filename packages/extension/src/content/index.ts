@@ -28,8 +28,7 @@ function processNode(node: Element) {
     return
   node.setAttribute(HANDLED_ATTR, '')
 
-  modifyNode(node).catch((err) => {
-    console.error('[mcsr-pb-display] modifyNode failed', err)
+  modifyNode(node).catch(() => {
     node.removeAttribute(HANDLED_ATTR)
   })
 }

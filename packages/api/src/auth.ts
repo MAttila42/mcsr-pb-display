@@ -3,9 +3,10 @@ import { MemoryAdapter } from '@rttnd/gau/adapters/memory'
 import { createAuth } from '@rttnd/gau/core'
 import { Microsoft } from '@rttnd/gau/oauth'
 import { eq } from 'drizzle-orm'
+
 import { db } from './db'
 import { Users } from './db/schema'
-import { getSession } from './store/session'
+import { getSession } from './services/session'
 import {
   minecraftEntitlements,
   minecraftLogin,
@@ -13,7 +14,7 @@ import {
   twitchValidate,
   xblAuthenticate,
   xstsAuthorize,
-} from './util'
+} from './utils'
 
 export const auth = createAuth({
   adapter: MemoryAdapter(),

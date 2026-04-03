@@ -6,7 +6,7 @@ This file is for agentic coding tools working in `mcsr-pb-display`.
 
 - Package manager: `bun` (usually the latest version)
 - Monorepo with `packages/api` and `packages/extension`
-- API: Elysia + Drizzle + libsql/Turso + Wrangler
+- API: Elysia + Drizzle + Cloudflare D1 + Wrangler
 - Extension: Svelte 5 + Vite + UnoCSS + shadcn-svelte
 - Lint/format authority: root `eslint.config.js`
 - Editor defaults live in `.vscode/settings.json`
@@ -39,10 +39,10 @@ This file is for agentic coding tools working in `mcsr-pb-display`.
 - Do not commit `.env*` files or `*.db`; they are gitignored
 - API local env is derived from `packages/api/.env.example`
 - Extension local env is derived from `packages/extension/.env.example`
-- API requires `DATABASE_URL_LOCAL`, `DATABASE_AUTH_TOKEN`, `AUTH_SECRET`, `MICROSOFT_CLIENT_ID`, `MICROSOFT_CLIENT_SECRET`
+- API requires `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_DATABASE_ID`, `CLOUDFLARE_D1_TOKEN`, `AUTH_SECRET`, `MICROSOFT_CLIENT_ID`, `MICROSOFT_CLIENT_SECRET`
 - Optional API proxy vars: `MC_API_OVERRIDE`, `PROXY_TOKEN`
 - Extension requires `VITE_API_URL`
-- API chooses local vs remote DB by `NODE_ENV === 'development'`
+- API database access uses Cloudflare D1 binding `env.DB`
 
 ## Commands
 
@@ -129,8 +129,6 @@ This file is for agentic coding tools working in `mcsr-pb-display`.
 - Prefer early-return guard clauses for invalid params, missing auth, and bad payloads
 - Single-line guards without braces are common and accepted; use braces for multi-line or nested branches
 - Wrap third-party network calls in `try/catch` when failure is a real branch
-- Use `AbortController` and timeouts around remote fetches that can hang
-- Clear timers and controllers in `finally`
 - Use `console.error` for unexpected operational failures; `no-console` is only a warning
 - Convert recoverable UI failures into user-facing messages
 - Prefer graceful degradation and stale cached data over blank states when possible
@@ -140,8 +138,6 @@ This file is for agentic coding tools working in `mcsr-pb-display`.
 
 - Follow the fluent Elysia chaining style used in `packages/api/src/index.ts` and `packages/api/src/user.ts`
 - Keep route/plugin singletons short and lowercase (`auth`, `user`, `db`)
-- Keep cache invalidation close to mutations such as link/unlink flows
-- Respect existing throttling helpers before adding new ranked, Twitch, Xbox, or Minecraft API calls
 - Keep API response messages short and specific
 - Preserve response shapes unless you update both API and extension together
 - Keep shared contract changes synchronized with `UserResponse` and `RankedInfo`
