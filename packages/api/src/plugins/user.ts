@@ -64,6 +64,6 @@ export const user = new Elysia({
       if (dbUser)
         return { twLogin: dbUser.twLogin, rankedInfo: null }
 
-      return status(502, 'Failed to fetch Ranked data.')
+      return status(404, 'User not found.')
     }
   })
