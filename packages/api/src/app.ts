@@ -10,7 +10,7 @@ import { link } from './plugins/link'
 import { user } from './plugins/user'
 
 const handler = createHandler(auth)
-const MINIMUM_SUPPORTED_EXTENSION_VERSION = '0.2.2'
+const MINIMUM_SUPPORTED_EXTENSION_VERSION = '0.3.0'
 const MICROSOFT_IDENTITY_ASSOCIATION = JSON.stringify({
   associatedApplications: [
     {
