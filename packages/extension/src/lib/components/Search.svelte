@@ -6,6 +6,7 @@
   import { Button } from '$lib/components/ui/button'
   import * as Card from '$lib/components/ui/card'
   import { formatTime } from '$lib/utils'
+  import { onMount } from 'svelte'
 
   function isRankedInfo(value: unknown): value is NonNullable<UserResponse['rankedInfo']> {
     if (!value || typeof value !== 'object')
@@ -39,6 +40,11 @@
   let lookupError: string | undefined = $state(undefined)
   let lookupLoading: boolean = $state(false)
   let abortController: AbortController | null = null
+  let searchInput: HTMLInputElement | null = null
+
+  onMount(() => {
+    searchInput?.focus()
+  })
 
   async function lookupUser(event: SubmitEvent) {
     event.preventDefault()
@@ -84,6 +90,7 @@
   <Card.Content class='p-0 space-y-3'>
     <form class='flex items-center gap-2' onsubmit={lookupUser}>
       <input
+        bind:this={searchInput}
         class='flex-1 border border-foreground/15 rounded-lg bg-background/80 px-3 py-2 text-sm text-foreground font-[Ubuntu] focus:border-primary placeholder:text-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/40'
         placeholder='Check Twitch user'
         bind:value={lookupName}
