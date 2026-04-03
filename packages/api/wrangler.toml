@@ -25,3 +25,7 @@ head_sampling_rate = 1
 [assets]
 directory = "./public/"
 binding = "ASSETS"
+
+[[migrations]]
+tag = "remove-do"
+deleted_classes = [ "RankedThrottle" ]
