@@ -1,13 +1,22 @@
-const L1_RETENTION_MS = 60 * 60 * 1000
+const L1_RETENTION_MS = 4 * 60 * 60 * 1000
 
 const L2_FRESH_WITH_PB_MS = 24 * 60 * 60 * 1000
-const L2_FRESH_WITHOUT_PB_MS = 28 * 24 * 60 * 60 * 1000
+const L2_FRESH_WITHOUT_PB_MS = 4 * 7 * 24 * 60 * 60 * 1000
 
-const L2_HARD_TTL_WITH_PB_SECONDS = 14 * 24 * 60 * 60
-const L2_HARD_TTL_WITHOUT_PB_SECONDS = 28 * 24 * 60 * 60
+const L2_HARD_TTL_WITH_PB_SECONDS = 2 * 7 * 24 * 60 * 60
+const L2_HARD_TTL_WITHOUT_PB_SECONDS = 2 * 4 * 7 * 24 * 60 * 60
+
+const LINK_L1_RETENTION_MS = 4 * 60 * 60 * 1000
+const LINK_L2_TTL_SECONDS = 24 * 60 * 60
 
 interface PbCacheEntry {
   pb: number | null
+  fetchedAt: number
+}
+
+interface LinkCacheEntry {
+  mcUUID: string
+  mcUsername: string
   fetchedAt: number
 }
 
@@ -19,6 +28,13 @@ export interface PbCacheLookup {
 }
 
 const l1PbCache = new Map<string, PbCacheEntry>()
+const l1LinkCache = new Map<string, LinkCacheEntry>()
+
+export interface LinkCacheLookup {
+  status: 'fresh' | 'miss'
+  mcUUID: string
+  mcUsername: string
+}
 
 let runtimePbCache: CloudflareKVNamespace | undefined
 
@@ -64,6 +80,17 @@ function isValidPbCacheEntry(value: unknown): value is PbCacheEntry {
     return false
 
   return true
+}
+
+function isValidLinkCacheEntry(value: unknown): value is LinkCacheEntry {
+  if (!value || typeof value !== 'object')
+    return false
+
+  const record = value as Record<string, unknown>
+  return typeof record.mcUUID === 'string'
+    && typeof record.mcUsername === 'string'
+    && typeof record.fetchedAt === 'number'
+    && Number.isFinite(record.fetchedAt)
 }
 
 function readL1FreshEntry(twLogin: string, now: number) {
@@ -171,4 +198,42 @@ export async function setCachedPb(twLogin: string, pb: number | null) {
   })
 
   return entry
+}
+
+function linkKeyFor(twLogin: string) {
+  return `link:${twLogin}`
+}
+
+export async function getCachedLink(twLogin: string): Promise<LinkCacheLookup | null> {
+  const normalized = normalizeTwitchLogin(twLogin)
+  if (!normalized)
+    return null
+
+  const now = Date.now()
+  const l1 = l1LinkCache.get(normalized)
+  if (l1 && now - l1.fetchedAt <= LINK_L1_RETENTION_MS)
+    return { status: 'fresh', mcUUID: l1.mcUUID, mcUsername: l1.mcUsername }
+
+  const kv = ensurePbCacheBinding()
+  const kvValue = await kv.get(linkKeyFor(normalized), 'json')
+
+  if (!isValidLinkCacheEntry(kvValue))
+    return null
+
+  l1LinkCache.set(normalized, kvValue)
+  return { status: 'fresh', mcUUID: kvValue.mcUUID, mcUsername: kvValue.mcUsername }
+}
+
+export async function setCachedLink(twLogin: string, mcUUID: string, mcUsername: string) {
+  const normalized = normalizeTwitchLogin(twLogin)
+  if (!normalized)
+    return
+
+  const entry: LinkCacheEntry = { mcUUID, mcUsername, fetchedAt: Date.now() }
+  l1LinkCache.set(normalized, entry)
+
+  const kv = ensurePbCacheBinding()
+  await kv.put(linkKeyFor(normalized), JSON.stringify(entry), {
+    expirationTtl: LINK_L2_TTL_SECONDS,
+  })
 }

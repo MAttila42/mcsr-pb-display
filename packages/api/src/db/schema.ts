@@ -6,9 +6,9 @@ export const Users = sqliteTable('users', {
   mcUsername: text('mc_username'),
   createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
-}, table => ({
-  twitchLoginIdx: uniqueIndex('twitchLoginIdx').on(table.twLogin),
-}))
+}, table => ([
+  uniqueIndex('twitchLoginIdx').on(table.twLogin),
+]))
 
 export type SelectUser = typeof Users.$inferSelect
 export type InsertUser = typeof Users.$inferInsert

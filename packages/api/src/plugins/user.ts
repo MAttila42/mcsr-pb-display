@@ -1,4 +1,5 @@
 import { Elysia, t } from 'elysia'
+import { setCachedLink } from '../services/cache'
 import { getRankedUser } from '../services/ranked'
 import {
   createDbRankedInfo,
@@ -50,7 +51,10 @@ export const user = new Elysia({
         return status(404, 'User not found.')
       }
 
-      await upsertUser(tw, rankedInfo.mcUUID, rankedInfo.mcUsername)
+      if (tw.toLowerCase() !== rankedInfo.mcUsername.toLowerCase())
+        await upsertUser(tw, rankedInfo.mcUUID, rankedInfo.mcUsername)
+
+      await setCachedLink(tw, rankedInfo.mcUUID, rankedInfo.mcUsername)
 
       return {
         twLogin: tw,
