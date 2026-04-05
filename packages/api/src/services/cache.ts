@@ -1,10 +1,10 @@
-const L1_RETENTION_MS = 60 * 60 * 1000
+const L1_RETENTION_MS = 4 * 60 * 60 * 1000
 
 const L2_FRESH_WITH_PB_MS = 24 * 60 * 60 * 1000
-const L2_FRESH_WITHOUT_PB_MS = 28 * 24 * 60 * 60 * 1000
+const L2_FRESH_WITHOUT_PB_MS = 4 * 7 * 24 * 60 * 60 * 1000
 
-const L2_HARD_TTL_WITH_PB_SECONDS = 14 * 24 * 60 * 60
-const L2_HARD_TTL_WITHOUT_PB_SECONDS = 28 * 24 * 60 * 60
+const L2_HARD_TTL_WITH_PB_SECONDS = 2 * 7 * 24 * 60 * 60
+const L2_HARD_TTL_WITHOUT_PB_SECONDS = 2 * 4 * 7 * 24 * 60 * 60
 
 interface PbCacheEntry {
   pb: number | null

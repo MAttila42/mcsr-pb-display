@@ -10,7 +10,7 @@ import { refreshPbForTwitchLogin } from './refresh'
 
 const MAX_PBS_USERS = 200
 
-export const MAX_AGE = 3600
+export const MAX_AGE = 4 * 60 * 60
 
 export function createRankedInfo(ranked: RankedUser | null): NonNullable<UserResponse['rankedInfo']> | null {
   if (!ranked)
