@@ -1,6 +1,6 @@
 import type { UserResponse } from '../types/user'
 import type { RankedUser } from './ranked'
-import { eq, sql } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 
 import { db } from '../db'
 import { Users } from '../db/schema'
@@ -43,6 +43,9 @@ export function createDbRankedInfo(mcUUID: string, mcUsername: string): NonNulla
 }
 
 export async function upsertUser(twLogin: string, mcUUID: string, mcUsername: string) {
+  if (twLogin.toLowerCase() === mcUsername.toLowerCase())
+    return
+
   await db
     .insert(Users)
     .values({
@@ -66,37 +69,20 @@ export async function findUserByTwitchLogin(twLogin: string) {
     .from(Users)
     .where(eq(Users.twLogin, twLogin))
 
-  if (user)
-    return user
+  return user
+}
 
-  const [caseInsensitiveUser] = await db
-    .select()
+export async function findUserLinkByTwitchLogin(twLogin: string) {
+  const [user] = await db
+    .select({
+      twLogin: Users.twLogin,
+      mcUUID: Users.mcUUID,
+      mcUsername: Users.mcUsername,
+    })
     .from(Users)
-    .where(sql`lower(${Users.twLogin}) = ${twLogin}`)
+    .where(eq(Users.twLogin, twLogin))
 
-  if (!caseInsensitiveUser)
-    return undefined
-
-  if (caseInsensitiveUser.twLogin === twLogin)
-    return caseInsensitiveUser
-
-  try {
-    await db
-      .update(Users)
-      .set({
-        twLogin,
-        updatedAt: new Date(),
-      })
-      .where(eq(Users.twLogin, caseInsensitiveUser.twLogin))
-
-    return {
-      ...caseInsensitiveUser,
-      twLogin,
-    }
-  }
-  catch {
-    return caseInsensitiveUser
-  }
+  return user
 }
 
 export function parsePbsUsersQuery(usersQuery: unknown): string[] {

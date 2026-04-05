@@ -1,9 +1,8 @@
-import { eq, sql } from 'drizzle-orm'
-
 import { db } from '../db'
 import { Users } from '../db/schema'
-import { setCachedPb } from './cache'
+import { getCachedLink, setCachedLink, setCachedPb } from './cache'
 import { getRankedUser } from './ranked'
+import { findUserLinkByTwitchLogin } from './user'
 
 interface UserLinkRow {
   twLogin: string
@@ -23,53 +22,6 @@ function normalizeTwitchLogin(twLogin: string) {
 
 function hasLinkedAccount(user: UserLinkRow | undefined) {
   return Boolean(user?.mcUUID && user.mcUsername)
-}
-
-async function findUserLinkByTwitchLogin(twLogin: string): Promise<UserLinkRow | undefined> {
-  const [user] = await db
-    .select({
-      twLogin: Users.twLogin,
-      mcUUID: Users.mcUUID,
-      mcUsername: Users.mcUsername,
-    })
-    .from(Users)
-    .where(eq(Users.twLogin, twLogin))
-
-  if (user)
-    return user
-
-  const [caseInsensitiveUser] = await db
-    .select({
-      twLogin: Users.twLogin,
-      mcUUID: Users.mcUUID,
-      mcUsername: Users.mcUsername,
-    })
-    .from(Users)
-    .where(sql`lower(${Users.twLogin}) = ${twLogin}`)
-
-  if (!caseInsensitiveUser)
-    return undefined
-
-  if (caseInsensitiveUser.twLogin === twLogin)
-    return caseInsensitiveUser
-
-  try {
-    await db
-      .update(Users)
-      .set({
-        twLogin,
-        updatedAt: new Date(),
-      })
-      .where(eq(Users.twLogin, caseInsensitiveUser.twLogin))
-
-    return {
-      ...caseInsensitiveUser,
-      twLogin,
-    }
-  }
-  catch {
-    return caseInsensitiveUser
-  }
 }
 
 async function upsertUserLink(twLogin: string, mcUUID: string, mcUsername: string) {
@@ -95,26 +47,37 @@ export async function refreshPbForTwitchLogin(twLogin: string, signal?: AbortSig
   if (!normalizedTwLogin)
     throw new Error('Missing Twitch login in PB refresh request')
 
-  const linkedUser = await findUserLinkByTwitchLogin(normalizedTwLogin)
+  let ranked = await getRankedUser(normalizedTwLogin, signal, normalizedTwLogin)
 
-  let ranked = null
+  let linkedUser: UserLinkRow | undefined
 
-  if (linkedUser?.mcUsername)
-    ranked = await getRankedUser(linkedUser.mcUsername, signal, normalizedTwLogin)
+  if (!ranked) {
+    const cachedLink = await getCachedLink(normalizedTwLogin)
+    if (cachedLink) {
+      ranked = await getRankedUser(cachedLink.mcUsername, signal, normalizedTwLogin)
+      if (ranked)
+        linkedUser = { twLogin: normalizedTwLogin, mcUUID: cachedLink.mcUUID, mcUsername: cachedLink.mcUsername }
+    }
+  }
 
-  const hasTriedTwitchName = linkedUser?.mcUsername?.toLowerCase() === normalizedTwLogin
-  if (!ranked && !hasTriedTwitchName)
-    ranked = await getRankedUser(normalizedTwLogin, signal, normalizedTwLogin)
+  if (!ranked) {
+    linkedUser = await findUserLinkByTwitchLogin(normalizedTwLogin)
+    if (linkedUser?.mcUsername)
+      ranked = await getRankedUser(linkedUser.mcUsername, signal, normalizedTwLogin)
+  }
 
   const pb = ranked?.statistics?.total?.bestTime?.ranked ?? null
 
   if (ranked) {
-    const shouldUpsertLink = !hasLinkedAccount(linkedUser)
+    const sameUsername = normalizedTwLogin === ranked.nickname.toLowerCase()
+    const shouldUpsertLink = !sameUsername && (!hasLinkedAccount(linkedUser)
       || linkedUser?.mcUUID !== ranked.uuid
-      || linkedUser?.mcUsername !== ranked.nickname
+      || linkedUser?.mcUsername !== ranked.nickname)
 
     if (shouldUpsertLink)
       await upsertUserLink(normalizedTwLogin, ranked.uuid, ranked.nickname)
+
+    await setCachedLink(normalizedTwLogin, ranked.uuid, ranked.nickname)
   }
 
   if (!ranked)
