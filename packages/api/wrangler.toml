@@ -29,3 +29,12 @@ binding = "ASSETS"
 [[migrations]]
 tag = "remove-do"
 deleted_classes = [ "RankedThrottle" ]
+
+[[queues.producers]]
+binding = "UPDATE_QUEUE"
+queue = "pb-update-queue"
+
+[[queues.consumers]]
+queue = "pb-update-queue"
+max_batch_size = 1
+max_batch_timeout = 1
