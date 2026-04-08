@@ -69,5 +69,7 @@ export async function consumePbRefreshQueue(batch: CloudflareQueueBatch<unknown>
       })
       message.retry()
     }
+
+    await new Promise(resolve => setTimeout(resolve, 1000))
   }
 }
